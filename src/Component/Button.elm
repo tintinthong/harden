@@ -32,6 +32,7 @@ update msg model =
             { model | text = "Button Clicked" }
 
 
+
 -- buttonOption : Option
 -- buttonOption =
 --     focusStyle
@@ -39,6 +40,7 @@ update msg model =
 --         , backgroundColor = Just (rgb255 0 0 255)
 --         , shadow = Nothing
 --         }
+
 
 buttonUI : Element Msg
 buttonUI =
@@ -54,6 +56,3 @@ buttonUI =
             [ Background.color (Element.rgb255 69 179 231) ]
         ]
         { onPress = Just Clicked, label = text "Default Button Text" }
-
-
-

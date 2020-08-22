@@ -13,6 +13,7 @@ import Element
         , fillPortion
         , height
         , image
+        , maximum
         , mouseOver
         , padding
         , paddingXY
@@ -21,7 +22,6 @@ import Element
         , spacing
         , text
         , width
-        , maximum
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -29,7 +29,6 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Tuple
-import Component.Button as Button
 
 
 type Model
@@ -58,7 +57,7 @@ update msg model =
 
         LocalMsg ->
             model
- 
+
 
 type alias Schema =
     { title : String, subtitle : String, imageUrl : String }
@@ -89,8 +88,7 @@ loremipsum =
 headerUI : { title : String, subtitle : String } -> Element msg
 headerUI titleObj =
     Element.column
-        [
-        Font.alignRight
+        [ Font.alignRight
         , Border.width 2
         , padding 10
         , spacing 5
@@ -120,8 +118,7 @@ headerUI titleObj =
 descriptionUI : String -> Element msg
 descriptionUI content =
     Element.textColumn
-        [
-         Border.width 2
+        [ Border.width 2
         , Font.size 12
         , Font.extraLight
         , Font.family
@@ -135,7 +132,6 @@ descriptionUI content =
         , spacing 10
         , padding 10
         , width (fill |> maximum 300)
-        
         ]
         [ Element.paragraph
             []
@@ -145,5 +141,5 @@ descriptionUI content =
 
 imageUI : String -> Element msg
 imageUI url =
-    image [ Border.width 2, Element.width (Element.px 200)]
+    image [ Border.width 2, Element.width (Element.px 200) ]
         { src = url, description = "Some image" }

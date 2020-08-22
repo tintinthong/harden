@@ -106,11 +106,10 @@ view model =
 
         GridModel x ->
             Html.map GridMsg
-                (layout [ ] <|
+                (layout [] <|
                     column []
-                        [
-                         header
-                        ,Grid.gridUI
+                        [ header
+                        , Grid.gridUI
                         , content
                         , footer
                         ]
