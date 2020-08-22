@@ -1,20 +1,29 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, text, div, h1, img)
+import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
+import Page.Home as Home
+import Tuple
+
 
 
 ---- MODEL ----
+-- Should separate by pages
 
 
-type alias Model =
-    {}
+type Model
+    = Home Home.Model
+
+
+
+-- | CardModel Card.Model
+-- { buttonModel : Button.Model }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( {}, Cmd.none )
+    ( Home (Tuple.first Home.init), Cmd.none )
 
 
 
@@ -22,7 +31,7 @@ init =
 
 
 type Msg
-    = NoOp
+    = HomeMsg Home.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -36,14 +45,19 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
-        ]
+    case model of
+        Home x ->
+            Html.map HomeMsg (Home.view x)
 
 
 
----- PROGRAM ----
+-- case model of
+--             Button _ -> Button.view model
+-- div []
+--     [ img [ src "/logo.svg" ] []
+--     , h1 [] [ text "Your Elm App is working!" ]
+--     ]
+-- ---- PROGRAM ----
 
 
 main : Program () Model Msg
