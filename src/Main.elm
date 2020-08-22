@@ -6,11 +6,8 @@ import Html.Attributes exposing (src)
 import Page.Home as Home
 import Tuple
 
-
-
 ---- MODEL ----
 -- Should separate by pages
-
 
 type Model
     = Home Home.Model

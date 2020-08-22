@@ -46,48 +46,34 @@ type Msg
     | CardMsg Card.Msg
 
 
--- List of Cards
+card =
+    Element.map CardMsg (Card.cardUI { title = "Card Name", subtitle = "Subtitle Name", imageUrl = "https://bit.ly/2VS0QBW" })
 
 
-gridUI : Element msg
+gridUI : Element Msg
 gridUI =
     let
         colAttrs =
             [ Border.width 2
             , Element.padding 10
-            , Element.alignRight
             ]
 
         rowAttrs =
             [ Border.width 2
             , Element.padding 10
-            , Element.width Element.fill
             , Element.spacing 10
             ]
 
         elAttrs =
             [ Border.width 2
             , Element.padding 5
-            , Element.width Element.fill
-            , Element.alignLeft
             , Font.center
             ]
 
-        makePage pageName =
-            Element.el elAttrs (Element.text <| pageName)
-
-        makeCol colOpts pageName =
-            Element.column colOpts [ makePage pageName ]
-
-        makeCardCol card =
-            Element.column colAttrs card
-
-        -- leftCol =
-        --     makeCol [ Element.alignLeft ] "Logo"
-        -- rightCols =
-        --     List.map (\name -> makeCol colAttrs name)
-        --         pageNames
+        makeCardCol c =
+            Element.column colAttrs [ c ]
+        exampleCard = makeCardCol card
     in
-    Element.row
+    Element.wrappedRow
         rowAttrs
-        [ makeCol colAttrs "jakodsf" ]
+        (List.repeat 12 exampleCard)

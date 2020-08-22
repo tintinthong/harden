@@ -1,5 +1,6 @@
 module Page.Home exposing (..)
 
+import Component.Grid as Grid
 import Component.Navbar as Navbar
 import Element exposing (..)
 import Element.Background as Background
@@ -15,16 +16,19 @@ type alias Placeholder =
 type Model
     = LocalModel Placeholder
     | NavbarModel Navbar.Model
+    | GridModel Grid.Model
 
 
 type Msg
     = LocalMsg
     | NavbarMsg Navbar.Msg
+    | GridMsg Grid.Msg
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( NavbarModel Navbar.init, Cmd.none )
+    -- ( NavbarModel Navbar.init, Cmd.none )
+    ( GridModel (Tuple.first Grid.init), Cmd.none )
 
 
 logo : Element msg
@@ -78,17 +82,19 @@ footer =
         ]
 
 
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
     case model of
         NavbarModel x ->
-            layout [ width fill, height fill ] <|
-                column [ width fill ]
-                    [ Navbar.navbarUI x
-                    , header
-                    , content
-                    , footer
-                    ]
+            Html.map NavbarMsg
+                (layout [ width fill, height fill ] <|
+                    column [ width fill ]
+                        [ Navbar.navbarUI x
+                        , header
+                        , content
+                        , footer
+                        ]
+                )
 
         LocalModel x ->
             layout [ width fill, height fill ] <|
@@ -97,3 +103,15 @@ view model =
                     , content
                     , footer
                     ]
+
+        GridModel x ->
+            Html.map GridMsg
+                (layout [ ] <|
+                    column []
+                        [
+                         header
+                        ,Grid.gridUI
+                        , content
+                        , footer
+                        ]
+                )

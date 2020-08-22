@@ -21,6 +21,7 @@ import Element
         , spacing
         , text
         , width
+        , maximum
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -28,6 +29,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Tuple
+import Component.Button as Button
 
 
 type Model
@@ -62,17 +64,16 @@ type alias Schema =
     { title : String, subtitle : String, imageUrl : String }
 
 
-card : Schema -> Element Msg
-card cardData =
+cardUI : Schema -> Element Msg
+cardUI cardData =
     Element.el
         [ Background.color (rgb255 255 255 255)
         , Font.color (rgb255 0 0 0)
         , Border.color (rgb255 0 0 0)
         , Border.width 2
         , padding 10
-        , width fill
         ]
-        (Element.column [ spacing 10 ]
+        (Element.column []
             [ headerUI { title = cardData.title, subtitle = cardData.subtitle }
             , imageUI cardData.imageUrl
             , descriptionUI loremipsum
@@ -88,8 +89,8 @@ loremipsum =
 headerUI : { title : String, subtitle : String } -> Element msg
 headerUI titleObj =
     Element.column
-        [ width fill
-        , Font.alignRight
+        [
+        Font.alignRight
         , Border.width 2
         , padding 10
         , spacing 5
@@ -111,7 +112,6 @@ headerUI titleObj =
             [ Font.size 15
             , Font.extraLight
             , Border.width 2
-            , width fill
             ]
             (Element.text <| titleObj.subtitle)
         ]
@@ -120,8 +120,8 @@ headerUI titleObj =
 descriptionUI : String -> Element msg
 descriptionUI content =
     Element.textColumn
-        [ width fill
-        , Border.width 2
+        [
+         Border.width 2
         , Font.size 12
         , Font.extraLight
         , Font.family
@@ -134,6 +134,8 @@ descriptionUI content =
         , Font.alignLeft
         , spacing 10
         , padding 10
+        , width (fill |> maximum 300)
+        
         ]
         [ Element.paragraph
             []
@@ -143,5 +145,5 @@ descriptionUI content =
 
 imageUI : String -> Element msg
 imageUI url =
-    image [ Border.width 2, width fill ]
+    image [ Border.width 2, Element.width (Element.px 200)]
         { src = url, description = "Some image" }

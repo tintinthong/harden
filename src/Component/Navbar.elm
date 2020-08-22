@@ -40,7 +40,7 @@ update msg model =
             }
 
 
-navbarUI : Model -> Element msg
+navbarUI : Model -> Element Msg
 navbarUI { pageNames } =
     let
         colAttrs =
