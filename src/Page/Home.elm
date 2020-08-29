@@ -2,6 +2,7 @@ module Page.Home exposing (..)
 
 import Component.Grid as Grid
 import Component.Navbar as Navbar
+import Component.Table as Table
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -110,6 +111,7 @@ view model =
                     column []
                         [ header
                         , Grid.gridUI
+                        , Table.tableUI
                         , content
                         , footer
                         ]
