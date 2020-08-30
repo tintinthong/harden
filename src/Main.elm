@@ -23,8 +23,7 @@ type Model
 
 init : ( Model, Cmd Msg )
 init =
-    ( Home (Tuple.first Home.init), Cmd.none )
-
+    ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
 
 
 ---- UPDATE ----

@@ -7,24 +7,56 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Http
-import Json.Decode exposing (Decoder, field, string)
-
-
-
--- type alias Model =
---     { something : String
---     }
+import Json.Decode exposing (Decoder, at, field, float, map3, string)
 
 
 type Model
-    = Success String
+    = Success Card
     | Loading
     | Failure
     | Default
 
 
 type Msg
-    = GotCards (Result Http.Error String)
+    = SendHttpRequest
+    | GotCards (Result Http.Error Card)
+
+
+movieDecoder : Decoder Card
+movieDecoder =
+    map3 Card
+        (at [ "Title" ] string)
+        (at [ "Plot" ] string)
+        (at [ "Poster" ] string)
+
+
+
+-- should be a url here
+
+
+type alias Card =
+    { title : String, subtitle : String, imageUrl : String }
+
+
+getMovie : Cmd Msg
+getMovie =
+    Http.get
+        { url = "https://www.omdbapi.com/?apikey=564562be&t=Guardian"
+        , expect = Http.expectJson GotCards movieDecoder
+        }
+
+
+
+-- { url = "http://www.omdbapi.com/?apikey=564562be&s=Rick and Morty"
+-- { url = "https://elm-lang.org/assets/public-opinion.txt"
+-- field "Search" (field "Title_url" string)
+
+
+init : ( Model, Cmd Msg )
+init =
+    ( Loading
+    , getMovie
+    )
 
 
 subscriptions : Model -> Sub Msg
@@ -35,6 +67,9 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        SendHttpRequest ->
+            ( model, getMovie )
+
         GotCards result ->
             case result of
                 Ok title ->
@@ -42,31 +77,6 @@ update msg model =
 
                 Err _ ->
                     ( Failure, Cmd.none )
-
-
-init : ( Model, Cmd Msg )
-init =
-    ( Loading
-    , getMovie
-    )
-
-
-movieDecoder : Decoder String
-movieDecoder =
-    field "Title" string
-
-
-getMovie : Cmd Msg
-getMovie =
-    Http.get
-        { url = "http://www.omdbapi.com/?apikey=564562be&t=Guardian"
-        , expect = Http.expectJson GotCards movieDecoder
-        }
-
-
- -- { url = "http://www.omdbapi.com/?apikey=564562be&s=Rick and Morty"
--- { url = "https://elm-lang.org/assets/public-opinion.txt"
--- field "Search" (field "Title_url" string)
 
 
 logo : Element msg
@@ -141,51 +151,28 @@ grid model =
         (List.repeat 12 (makeCardCol <| viewCard model))
 
 
-type alias Card =
-    { title : String, subtitle : String, imageUrl : String }
 
-
-exampleViewCard : Element msg
-exampleViewCard =
-    card { title = "Card Name", subtitle = "Subtitle Name", imageUrl = "https://bit.ly/2VS0QBW" }
+-- makeCardCol <| viewCard model
 
 
 viewCard : Model -> Element msg
 viewCard model =
     case model of
         Failure ->
-            card2 { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+            card { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
 
         Loading ->
-            card2 { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+            card { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
 
         Default ->
-            card2 { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+            card { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
 
-        Success x ->
-            card2 { title = x, subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+        Success gottenCard ->
+            card gottenCard
 
 
 card : Card -> Element msg
 card cardData =
-    Element.el
-        [ Background.color (rgb255 255 255 255)
-        , Font.color (rgb255 0 0 0)
-        , Border.color (rgb255 0 0 0)
-        , Border.width 2
-        , padding 10
-        ]
-        (Element.column []
-            [ cardHeader { title = cardData.title, subtitle = cardData.subtitle }
-            , cardImage cardData.imageUrl
-            , cardDescription loremipsum
-            , button
-            ]
-        )
-
-
-card2 : Card -> Element msg
-card2 cardData =
     Element.el
         [ Background.color (rgb255 255 255 255)
         , Font.color (rgb255 0 0 0)
@@ -278,6 +265,7 @@ loremipsum =
     "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged."
 
 
+view : Model -> Html msg
 view model =
     layout [ width fill, height fill ] <|
         column [ width fill, centerX ]
