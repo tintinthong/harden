@@ -26,6 +26,7 @@ init =
     ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
 
 
+
 ---- UPDATE ----
 
 
@@ -50,12 +51,17 @@ updateWith toModel toMsg model ( subModel, subCmd ) =
 
 ---- VIEW ----
 
-
 view : Model -> Html Msg
-view model =
+view model = 
     case model of
-        Home submodel ->
-            Html.map HomeMsg (Home.view submodel)
+       Home submodel -> Html.map HomeMsg (Home.view submodel)
+
+
+-- view : (subMsg-> Msg )->Model -> Html Msg
+-- view toMsg model = 
+--     case model of
+--         Home submodel ->  Html.map toMsg (Home.view submodel) 
+            -- Html.map HomeMsg (Home.view submodel)
 
 
 
@@ -71,7 +77,7 @@ view model =
 main : Program () Model Msg
 main =
     Browser.element
-        { view = view
+        { view = view 
         , init = \_ -> init
         , update = update
         , subscriptions = always Sub.none
