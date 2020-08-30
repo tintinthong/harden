@@ -6,20 +6,67 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Http
+import Json.Decode exposing (Decoder, field, string)
 
 
-type alias Model =
-    { something : String
-    }
+
+-- type alias Model =
+--     { something : String
+--     }
+
+
+type Model
+    = Success String
+    | Loading
+    | Failure
+    | Default
 
 
 type Msg
-    = Default
+    = GotCards (Result Http.Error String)
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GotCards result ->
+            case result of
+                Ok title ->
+                    ( Success title, Cmd.none )
+
+                Err _ ->
+                    ( Failure, Cmd.none )
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { something = "hi" }, Cmd.none )
+    ( Loading
+    , getMovie
+    )
+
+
+movieDecoder : Decoder String
+movieDecoder =
+    field "Title" string
+
+
+getMovie : Cmd Msg
+getMovie =
+    Http.get
+        { url = "http://www.omdbapi.com/?apikey=564562be&t=Guardian"
+        , expect = Http.expectJson GotCards movieDecoder
+        }
+
+
+ -- { url = "http://www.omdbapi.com/?apikey=564562be&s=Rick and Morty"
+-- { url = "https://elm-lang.org/assets/public-opinion.txt"
+-- field "Search" (field "Title_url" string)
 
 
 logo : Element msg
@@ -37,37 +84,31 @@ logo =
 navbar : Element msg
 navbar =
     let
-        colAttrs =
-            [ Border.width 2
-            , Element.padding 10
-            , Element.alignRight
-            ]
-
         rowAttrs =
             [ Border.width 2
-            , Element.padding 10
-            , Element.width Element.fill
-            , Element.spacing 10
+            , padding 10
+            , width <| fill
+            , spacing 10
             ]
 
         elAttrs =
-            [ Element.padding 5
-            , Element.width Element.fill
-            , Element.alignLeft
+            [ padding 5
+            , width fill
+            , alignLeft
             , Font.center
             ]
 
         makePage pageName =
-            Element.el elAttrs (Element.text <| pageName)
+            Element.el elAttrs (text <| pageName)
 
         makeCol colOpts pageName =
             Element.column colOpts [ makePage pageName ]
 
         leftCol =
-            makeCol [ Element.alignLeft ] "Logo"
+            makeCol [ alignLeft ] "Logo"
 
         rightCols =
-            List.map (\name -> makeCol colAttrs name)
+            List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
                 [ "Home", "Stats", "Login" ]
     in
     Element.row
@@ -75,20 +116,20 @@ navbar =
         (leftCol :: rightCols)
 
 
-grid : Element msg
-grid =
+grid : Model -> Element msg
+grid model =
     let
         colAttrs =
-            [ Element.padding 10
+            [ padding 10
             ]
 
         rowAttrs =
-            [ Element.padding 10
-            , Element.spacing 10
+            [ padding 10
+            , spacing 10
             ]
 
         elAttrs =
-            [ Element.padding 5
+            [ padding 5
             , Font.center
             ]
 
@@ -97,19 +138,54 @@ grid =
     in
     Element.wrappedRow
         rowAttrs
-        (List.repeat 12 (makeCardCol exampleCardData))
+        (List.repeat 12 (makeCardCol <| viewCard model))
 
 
 type alias Card =
     { title : String, subtitle : String, imageUrl : String }
 
 
-exampleCardData =
+exampleViewCard : Element msg
+exampleViewCard =
     card { title = "Card Name", subtitle = "Subtitle Name", imageUrl = "https://bit.ly/2VS0QBW" }
+
+
+viewCard : Model -> Element msg
+viewCard model =
+    case model of
+        Failure ->
+            card2 { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+
+        Loading ->
+            card2 { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+
+        Default ->
+            card2 { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+
+        Success x ->
+            card2 { title = x, subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
 
 
 card : Card -> Element msg
 card cardData =
+    Element.el
+        [ Background.color (rgb255 255 255 255)
+        , Font.color (rgb255 0 0 0)
+        , Border.color (rgb255 0 0 0)
+        , Border.width 2
+        , padding 10
+        ]
+        (Element.column []
+            [ cardHeader { title = cardData.title, subtitle = cardData.subtitle }
+            , cardImage cardData.imageUrl
+            , cardDescription loremipsum
+            , button
+            ]
+        )
+
+
+card2 : Card -> Element msg
+card2 cardData =
     Element.el
         [ Background.color (rgb255 255 255 255)
         , Font.color (rgb255 0 0 0)
@@ -204,9 +280,7 @@ loremipsum =
 
 view model =
     layout [ width fill, height fill ] <|
-        column [ width fill ]
-            [
-              navbar
-            , grid
-
+        column [ width fill, centerX ]
+            [ navbar
+            , grid model
             ]

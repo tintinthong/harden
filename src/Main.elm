@@ -6,8 +6,11 @@ import Html.Attributes exposing (src)
 import Page.Home as Home
 import Tuple
 
+
+
 ---- MODEL ----
 -- Should separate by pages
+
 
 type Model
     = Home Home.Model
@@ -33,7 +36,16 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case ( msg, model ) of
+        ( HomeMsg submsg, Home submodel ) ->
+            Home.update submsg submodel |> updateWith Home HomeMsg model
+
+
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+updateWith toModel toMsg model ( subModel, subCmd ) =
+    ( toModel subModel
+    , Cmd.map toMsg subCmd
+    )
 
 
 
@@ -43,8 +55,8 @@ update msg model =
 view : Model -> Html Msg
 view model =
     case model of
-        Home x ->
-            Html.map HomeMsg (Home.view x)
+        Home submodel ->
+            Html.map HomeMsg (Home.view submodel)
 
 
 
