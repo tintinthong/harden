@@ -21,6 +21,7 @@ type Request
 type alias Model =
     { searchString : String
     , request : Request
+    , errorMessage : Maybe String
     }
 
 
@@ -81,6 +82,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { searchString = ""
       , request = Loading
+      , errorMessage = Nothing
       }
     , getMovies "Rick"
     )
@@ -105,8 +107,33 @@ update msg model =
                 Ok cards ->
                     ( { model | request = Success cards }, Cmd.none )
 
-                Err _ ->
-                    ( { model | request = Failure }, Cmd.none )
+                Err error ->
+                    ( { model | request = Failure, errorMessage = Just (errorToString error) }, Cmd.none )
+
+
+errorToString : Http.Error -> String
+errorToString error =
+    case error of
+        Http.BadUrl url ->
+            "The URL " ++ url ++ " was invalid"
+
+        Http.Timeout ->
+            "Unable to reach the server, try again"
+
+        Http.NetworkError ->
+            "Unable to reach the server, check your network connection"
+
+        Http.BadStatus 500 ->
+            "The server had a problem, try again later"
+
+        Http.BadStatus 400 ->
+            "Verify your information and try again"
+
+        Http.BadStatus _ ->
+            "Unknown Error"
+
+        Http.BadBody errorMessage ->
+            errorMessage
 
 
 logo : Element msg
@@ -121,8 +148,8 @@ logo =
         none
 
 
-navbar : Model -> Element Msg
-navbar model =
+navbar : Element Msg
+navbar =
     let
         rowAttrs =
             [ Border.width 2
@@ -151,23 +178,6 @@ navbar model =
         handler newSearchString =
             SearchChanged newSearchString
 
-        { searchString, request } =
-            model
-
-        errorMessage theRequest =
-            case theRequest of
-                Default ->
-                    Element.text ""
-
-                Loading ->
-                    Element.text ""
-
-                Failure ->
-                    Element.text "You suck"
-
-                Success cards ->
-                    Element.text ""
-
         centerCol =
             Element.row []
                 [ Input.text []
@@ -177,20 +187,22 @@ navbar model =
                     , placeholder = Nothing
                     }
                 , buttonSearch
-                , errorMessage request
                 ]
 
         rightCols =
             List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
                 [ "Home", "Stats", "Login" ]
     in
-    Element.row
-        rowAttrs
-        (leftCol :: centerCol :: rightCols)
+    Element.row rowAttrs (leftCol :: centerCol :: rightCols)
 
 
-grid : Model -> Element msg
-grid model =
+
+--         Success cards ->
+--             Element.text ""
+
+
+grid : Request -> Element msg
+grid request =
     let
         colAttrs =
             [ padding 10
@@ -208,9 +220,6 @@ grid model =
 
         makeCardCol c =
             Element.column colAttrs [ c ]
-
-        { searchString, request } =
-            model
     in
     case request of
         Default ->
@@ -390,8 +399,32 @@ loremipsum =
 
 view : Model -> Html Msg
 view model =
-    layout [ width fill, height fill ] <|
-        column [ width fill, centerX ]
-            [ navbar model
-            , grid model
-            ]
+    case model.request of
+        Loading ->
+            layout [ width fill, height fill ] <|
+                column [ width fill, centerX ]
+                    [ navbar
+                    , grid model.request
+                    ]
+
+        Default ->
+            layout [ width fill, height fill ] <|
+                column [ width fill, centerX ]
+                    [ navbar
+                    , grid model.request
+                    ]
+
+        Failure ->
+            layout [ width fill, height fill ] <|
+                column [ width fill, centerX ]
+                    [ navbar
+                    , grid model.request
+                    , Element.text (Maybe.withDefault "" model.errorMessage)
+                    ]
+
+        Success cards ->
+            layout [ width fill, height fill ] <|
+                column [ width fill, centerX ]
+                    [ navbar
+                    , grid model.request
+                    ]
