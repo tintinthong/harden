@@ -7,55 +7,82 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Http
-import Json.Decode exposing (Decoder, at, field, float, map3, string)
+import Json.Decode exposing (Decoder, at, field, float, list, map3, string)
+import String as String
 
 
-type Model
-    = Success Card
+type Request
+    = Success (List Card)
     | Loading
     | Failure
     | Default
 
 
+type alias Model =
+    { searchString : String
+    , request : Request
+    }
+
+
 type Msg
     = SendHttpRequest
-    | GotCards (Result Http.Error Card)
+    | GotCards (Result Http.Error (List Card))
+    | SearchChanged String
 
 
 movieDecoder : Decoder Card
 movieDecoder =
     map3 Card
         (at [ "Title" ] string)
-        (at [ "Plot" ] string)
+        --title
+        (at [ "Type" ] string)
+        --subtitle
         (at [ "Poster" ] string)
 
 
 
--- should be a url here
+-- type alias Search =
+--     { title : String
+--     , description : String
+--     , imageUrl : String
+--     }
+
+
+moviesDecoder : Decoder (List Card)
+moviesDecoder =
+    field "Search" <| list movieDecoder
 
 
 type alias Card =
     { title : String, subtitle : String, imageUrl : String }
 
 
-getMovie : Cmd Msg
-getMovie =
-    Http.get
-        { url = "https://www.omdbapi.com/?apikey=564562be&t=Guardian"
-        , expect = Http.expectJson GotCards movieDecoder
-        }
 
-
-
+-- getMovie : Cmd Msg
+-- getMovie =
+--     Http.get
+--         { url = "https://www.omdbapi.com/?apikey=564562be&t=Guardian"
+--         , expect = Http.expectJson GotCards movieDecoder
+--         }
 -- { url = "http://www.omdbapi.com/?apikey=564562be&s=Rick and Morty"
 -- { url = "https://elm-lang.org/assets/public-opinion.txt"
 -- field "Search" (field "Title_url" string)
 
 
+getMovies : String -> Cmd Msg
+getMovies searchString =
+    Http.get
+        { url = "https://www.omdbapi.com/?apikey=564562be&s=" ++ searchString
+        , expect = Http.expectJson GotCards moviesDecoder
+        }
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( Loading
-    , getMovie
+    ( { searchString = ""
+      , request = Loading
+      }
+    , getMovies "Rick"
     )
 
 
@@ -68,15 +95,18 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SendHttpRequest ->
-            ( model, getMovie )
+            ( { model | request = Loading }, getMovies model.searchString )
+
+        SearchChanged a ->
+            ( { model | searchString = a }, Cmd.none )
 
         GotCards result ->
             case result of
-                Ok title ->
-                    ( Success title, Cmd.none )
+                Ok cards ->
+                    ( { model | request = Success cards }, Cmd.none )
 
                 Err _ ->
-                    ( Failure, Cmd.none )
+                    ( { model | request = Failure }, Cmd.none )
 
 
 logo : Element msg
@@ -91,8 +121,8 @@ logo =
         none
 
 
-navbar : Element msg
-navbar =
+navbar : Model -> Element Msg
+navbar model =
     let
         rowAttrs =
             [ Border.width 2
@@ -108,6 +138,7 @@ navbar =
             , Font.center
             ]
 
+        -- Element.msg
         makePage pageName =
             Element.el elAttrs (text <| pageName)
 
@@ -117,13 +148,45 @@ navbar =
         leftCol =
             makeCol [ alignLeft ] "Logo"
 
+        handler newSearchString =
+            SearchChanged newSearchString
+
+        { searchString, request } =
+            model
+
+        errorMessage theRequest =
+            case theRequest of
+                Default ->
+                    Element.text ""
+
+                Loading ->
+                    Element.text ""
+
+                Failure ->
+                    Element.text "You suck"
+
+                Success cards ->
+                    Element.text ""
+
+        centerCol =
+            Element.row []
+                [ Input.text []
+                    { label = Input.labelAbove [] (Element.el [] (text <| "Type in name of movie"))
+                    , onChange = handler
+                    , text = "Rick"
+                    , placeholder = Nothing
+                    }
+                , buttonSearch
+                , errorMessage request
+                ]
+
         rightCols =
             List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
                 [ "Home", "Stats", "Login" ]
     in
     Element.row
         rowAttrs
-        (leftCol :: rightCols)
+        (leftCol :: centerCol :: rightCols)
 
 
 grid : Model -> Element msg
@@ -145,30 +208,22 @@ grid model =
 
         makeCardCol c =
             Element.column colAttrs [ c ]
+
+        { searchString, request } =
+            model
     in
-    Element.wrappedRow
-        rowAttrs
-        (List.repeat 12 (makeCardCol <| viewCard model))
+    case request of
+        Default ->
+            Element.wrappedRow rowAttrs []
 
-
-
--- makeCardCol <| viewCard model
-
-
-viewCard : Model -> Element msg
-viewCard model =
-    case model of
         Failure ->
-            card { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+            Element.wrappedRow rowAttrs []
 
         Loading ->
-            card { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
+            Element.wrappedRow rowAttrs []
 
-        Default ->
-            card { title = "not working", subtitle = "shit", imageUrl = "https://bit.ly/2VS0QBW" }
-
-        Success gottenCard ->
-            card gottenCard
+        Success cards ->
+            Element.wrappedRow rowAttrs (List.map (makeCardCol << card) cards)
 
 
 card : Card -> Element msg
@@ -180,11 +235,17 @@ card cardData =
         , Border.width 2
         , padding 10
         ]
-        (Element.column []
+        (Element.column
+            [ width (fill |> maximum 200)
+            ]
             [ cardHeader { title = cardData.title, subtitle = cardData.subtitle }
             , cardImage cardData.imageUrl
             , cardDescription loremipsum
-            , button
+            , Element.row
+                []
+                [ buttonSeeMore
+                , buttonDelete
+                ]
             ]
         )
 
@@ -195,6 +256,8 @@ cardHeader titleObj =
         [ Font.alignRight
         , padding 10
         , spacing 5
+
+        -- , width (fill |> maximum 300)
         ]
         [ Element.el
             [ Font.size 25
@@ -207,12 +270,12 @@ cardHeader titleObj =
                 , Font.sansSerif
                 ]
             ]
-            (Element.text <| titleObj.title ++ " - Title")
+            (Element.text <| titleObj.title)
         , Element.el
             [ Font.size 15
             , Font.extraLight
             ]
-            (Element.text <| titleObj.subtitle)
+            (Element.text <| String.right 100 <| titleObj.subtitle)
         ]
 
 
@@ -231,7 +294,8 @@ cardDescription content =
         , Font.alignLeft
         , spacing 10
         , padding 10
-        , width (fill |> maximum 300)
+
+        -- , width (fill |> maximum 300)
         ]
         [ Element.paragraph
             []
@@ -241,34 +305,93 @@ cardDescription content =
 
 cardImage : String -> Element msg
 cardImage url =
-    image [ Element.width (Element.px 300) ]
+    image
+        [ width (fill |> maximum 200)
+        ]
         { src = url, description = "Some image" }
 
 
-button : Element msg
-button =
+buttonSearch : Element Msg
+buttonSearch =
     Input.button
         [ mouseOver
-            [ Background.color (Element.rgb255 205 235 249)
+            [ Background.color hoverBlue
             ]
         , Font.size 16
         , padding 10
         , Border.width 2
-        , Background.color (Element.rgb255 255 255 255)
+        , Background.color white
+        , Element.focused
+            [ Background.color focusedBlue ]
+        ]
+        { onPress = Just SendHttpRequest, label = text "Search" }
+
+
+buttonSeeMore : Element msg
+buttonSeeMore =
+    Input.button
+        [ mouseOver
+            [ Background.color hoverBlue
+            ]
+        , Font.size 16
+        , padding 10
+        , Border.width 2
+        , Background.color white
+        , Element.focused
+            [ Background.color focusedBlue ]
+        ]
+        { onPress = Nothing, label = text "See More" }
+
+
+white =
+    Element.rgb255 255 255 255
+
+
+red =
+    Element.rgb255 255 0 0
+
+
+deleteRed =
+    Element.rgb255 223 71 89
+
+
+focusedBlue =
+    Element.rgb255 69 179 231
+
+
+hoverBlue =
+    Element.rgb255 205 235 249
+
+
+dangerRed =
+    Element.rgb255 223 71 89
+
+
+buttonDelete : Element msg
+buttonDelete =
+    Input.button
+        [ Font.color white
+        , Font.size 16
+        , padding 10
+        , Border.width 2
+        , Background.color dangerRed
+        , mouseOver
+            [ Background.color hoverBlue
+            ]
         , Element.focused
             [ Background.color (Element.rgb255 69 179 231) ]
         ]
-        { onPress = Nothing, label = text "Click Here" }
+        { onPress = Nothing, label = text "Delete" }
 
 
 loremipsum =
     "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged."
 
 
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
     layout [ width fill, height fill ] <|
         column [ width fill, centerX ]
-            [ navbar
+            [ navbar model
             , grid model
             ]
