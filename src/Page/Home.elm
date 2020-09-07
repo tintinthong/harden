@@ -7,7 +7,8 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Http
-import Json.Decode exposing (Decoder, at, field, float, list, map3, string)
+import Json.Decode exposing (Decoder, Error, at, bool, decodeString, field, float, list, map2, map3, string)
+import Paginate
 import String as String
 
 
@@ -22,6 +23,7 @@ type alias Model =
     { searchString : String
     , request : Request
     , errorMessage : Maybe String
+    , paginatedList : Paginate.PaginatedList Card
     }
 
 
@@ -29,6 +31,7 @@ type Msg
     = SendHttpRequest
     | GotCards (Result Http.Error (List Card))
     | SearchChanged String
+    | UsePaginate PaginateAction
 
 
 movieDecoder : Decoder Card
@@ -83,6 +86,7 @@ init =
     ( { searchString = ""
       , request = Loading
       , errorMessage = Nothing
+      , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
       }
     , getMovies "Rick"
     )
@@ -91,6 +95,11 @@ init =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
+
+
+paginateSize : Int
+paginateSize =
+    8
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -105,10 +114,22 @@ update msg model =
         GotCards result ->
             case result of
                 Ok cards ->
-                    ( { model | request = Success cards }, Cmd.none )
+                    ( { model | paginatedList = Paginate.fromList paginateSize cards, request = Success cards }, Cmd.none )
 
                 Err error ->
                     ( { model | request = Failure, errorMessage = Just (errorToString error) }, Cmd.none )
+
+        UsePaginate paginateAction ->
+            case paginateAction of
+                Next ->
+                    ( { model | paginatedList = Paginate.next model.paginatedList }, Cmd.none )
+
+                Prev ->
+                    ( { model | paginatedList = Paginate.prev model.paginatedList }, Cmd.none )
+
+
+
+-- NOt to be confused with the one in JSON.decode
 
 
 errorToString : Http.Error -> String
@@ -134,6 +155,30 @@ errorToString error =
 
         Http.BadBody errorMessage ->
             errorMessage
+
+
+
+-- Result.withDefault "There was an error but we had problems parsing" (decodeString apiErrorDecoder errorMessage)
+-- Result.withDefault "There was an error but we had problems parsing" (decodeString errorDecoder errorMessage)
+--JSONString -> Single Field String
+
+
+errorDecoder : Decoder String
+errorDecoder =
+    field "Error" string
+
+
+apiErrorDecoder : Decoder ApiError
+apiErrorDecoder =
+    map2 ApiError
+        (field "Response" bool)
+        (field "Error" string)
+
+
+type alias ApiError =
+    { response : Bool
+    , error : String
+    }
 
 
 logo : Element msg
@@ -201,8 +246,8 @@ navbar =
 --             Element.text ""
 
 
-grid : Request -> Element msg
-grid request =
+grid : Model -> Element Msg
+grid model =
     let
         colAttrs =
             [ padding 10
@@ -221,7 +266,7 @@ grid request =
         makeCardCol c =
             Element.column colAttrs [ c ]
     in
-    case request of
+    case model.request of
         Default ->
             Element.wrappedRow rowAttrs []
 
@@ -232,7 +277,41 @@ grid request =
             Element.wrappedRow rowAttrs []
 
         Success cards ->
-            Element.wrappedRow rowAttrs (List.map (makeCardCol << card) cards)
+            Element.column
+                []
+                [ paginateButton Next
+                , paginateButton Prev
+                , Element.wrappedRow rowAttrs (List.map (makeCardCol << card) <| Paginate.page model.paginatedList)
+                ]
+
+
+
+-- grid : Request -> Element msg
+-- grid request =
+--     let
+--         colAttrs =
+--             [ padding 10
+--             ]
+--         rowAttrs =
+--             [ padding 10
+--             , spacing 10
+--             ]
+--         elAttrs =
+--             [ padding 5
+--             , Font.center
+--             ]
+--         makeCardCol c =
+--             Element.column colAttrs [ c ]
+--     in
+--     case request of
+--         Default ->
+--             Element.wrappedRow rowAttrs []
+--         Failure ->
+--             Element.wrappedRow rowAttrs []
+--         Loading ->
+--             Element.wrappedRow rowAttrs []
+--         Success cards ->
+--             Element.wrappedRow rowAttrs (List.map (makeCardCol << card) cards)
 
 
 card : Card -> Element msg
@@ -320,6 +399,41 @@ cardImage url =
         { src = url, description = "Some image" }
 
 
+type PaginateAction
+    = Next
+    | Prev
+
+
+getPaginateRecord : PaginateAction -> { text : String, action : PaginateAction }
+getPaginateRecord paginateAction =
+    case paginateAction of
+        Next ->
+            { text = "next", action = Next }
+
+        Prev ->
+            { text = "prev", action = Prev }
+
+
+paginateButton : PaginateAction -> Element Msg
+paginateButton paginateAction =
+    let
+        paginateRecord =
+            getPaginateRecord paginateAction
+    in
+    Input.button
+        [ mouseOver
+            [ Background.color hoverBlue
+            ]
+        , Font.size 16
+        , padding 10
+        , Border.width 2
+        , Background.color white
+        , Element.focused
+            [ Background.color focusedBlue ]
+        ]
+        { onPress = Just (UsePaginate paginateRecord.action), label = text paginateRecord.text }
+
+
 buttonSearch : Element Msg
 buttonSearch =
     Input.button
@@ -404,21 +518,21 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
-                    , grid model.request
+                    , grid model
                     ]
 
         Default ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
-                    , grid model.request
+                    , grid model
                     ]
 
         Failure ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
-                    , grid model.request
+                    , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
                     ]
 
@@ -426,5 +540,5 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
-                    , grid model.request
+                    , grid model
                     ]
