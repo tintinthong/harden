@@ -14,18 +14,23 @@ import Url
 -- Should separate by pages
 
 
-type Model
-    = Home Home.Model
+type Model =
+    Home Home.Model
 
 
 
+-- { key : Nav.Key
+-- , url : Url.Url
+-- , page : PageModel
+-- }
+-- type PageModel
+--     = Home Home.Model
 -- | CardModel Card.Model
 -- { buttonModel : Button.Model }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
-    ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
+init flags url key = ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
 
 
 
@@ -41,12 +46,24 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model ) of
-        ( HomeMsg submsg, Home submodel ) ->
-            Home.update submsg submodel |> updateWith Home HomeMsg model
-        ( UrlChanged _ , Home submodel ) ->
-            (model, Cmd.none)
-        ( LinkClicked _ , Home submodel ) ->
-            (model, Cmd.none)
+        (HomeMsg submsg, Home submodel) -> Home.update submsg submodel |> updateWith Home HomeMsg model
+
+        ( UrlChanged _, Home submodel ) ->
+            ( model, Cmd.none )
+
+        ( LinkClicked _, Home submodel ) ->
+            ( model, Cmd.none )
+
+
+
+-- case urlRequest of
+--     Browser.Internal url -> (model, Nav.pushUrl model.key (Url.toString url))
+--     Browser.External url -> (model, Nav.pushUrl model.key (Url.toString url))
+-- updateWith2 : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+-- updateWith2 toModel toMsg model ( subModel, subCmd ) =
+--     ( toModel subModel
+--     , Cmd.map toMsg subCmd
+--     )
 
 
 updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
@@ -67,7 +84,7 @@ view model =
         Home submodel ->
             { title = "Home"
             , body =
-                [Html.map HomeMsg (Home.view submodel)]
+                [ Html.map HomeMsg (Home.view submodel) ]
             }
 
 

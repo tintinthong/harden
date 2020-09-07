@@ -99,7 +99,7 @@ subscriptions model =
 
 paginateSize : Int
 paginateSize =
-    8
+   12 
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -279,8 +279,10 @@ grid model =
         Success cards ->
             Element.column
                 []
-                [ paginateButton Next
-                , paginateButton Prev
+                [ Element.row [ alignRight ]
+                    [ paginateButton Next
+                    , paginateButton Prev
+                    ]
                 , Element.wrappedRow rowAttrs (List.map (makeCardCol << card) <| Paginate.page model.paginatedList)
                 ]
 
