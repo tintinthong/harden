@@ -1,10 +1,12 @@
 module Main exposing (..)
 
 import Browser
+import Browser.Navigation as Nav
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
 import Page.Home as Home
 import Tuple
+import Url
 
 
 
@@ -21,8 +23,8 @@ type Model
 -- { buttonModel : Button.Model }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
     ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
 
 
@@ -32,6 +34,8 @@ init =
 
 type Msg
     = HomeMsg Home.Msg
+    | UrlChanged Url.Url
+    | LinkClicked Browser.UrlRequest
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -39,6 +43,10 @@ update msg model =
     case ( msg, model ) of
         ( HomeMsg submsg, Home submodel ) ->
             Home.update submsg submodel |> updateWith Home HomeMsg model
+        ( UrlChanged _ , Home submodel ) ->
+            (model, Cmd.none)
+        ( LinkClicked _ , Home submodel ) ->
+            (model, Cmd.none)
 
 
 updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
@@ -50,21 +58,25 @@ updateWith toModel toMsg model ( subModel, subCmd ) =
 
 
 ---- VIEW ----
+-- view : Model -> Html Msg
 
-view : Model -> Html Msg
-view model = 
+
+view : Model -> Browser.Document Msg
+view model =
     case model of
-       Home submodel -> Html.map HomeMsg (Home.view submodel)
+        Home submodel ->
+            { title = "Home"
+            , body =
+                [Html.map HomeMsg (Home.view submodel)]
+            }
+
 
 
 -- view : (subMsg-> Msg )->Model -> Html Msg
--- view toMsg model = 
+-- view toMsg model =
 --     case model of
---         Home submodel ->  Html.map toMsg (Home.view submodel) 
-            -- Html.map HomeMsg (Home.view submodel)
-
-
-
+--         Home submodel ->  Html.map toMsg (Home.view submodel)
+-- Html.map HomeMsg (Home.view submodel)
 -- case model of
 --             Button _ -> Button.view model
 -- div []
@@ -74,11 +86,30 @@ view model =
 -- ---- PROGRAM ----
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
+
+
 main : Program () Model Msg
 main =
-    Browser.element
-        { view = view 
-        , init = \_ -> init
+    Browser.application
+        { init = init
+        , view = view
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
+        , onUrlRequest = LinkClicked
+        , onUrlChange = UrlChanged
         }
+
+
+
+-- , onUrlRequest=
+-- , onUrlChange =
+-- ,subscriptions =
+-- Browser.element
+--     { view = view
+--     , init = \_ -> init
+--     , update = update
+--     , subscriptions = always Sub.none
+--     }
