@@ -1,12 +1,18 @@
 module Main exposing (..)
 
+import Api
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
+import Json.Decode as Decode exposing (Value)
 import Page.Home as Home
+import Page.Login as Login
+import Route exposing (Route)
+import Session exposing (Session)
 import Tuple
-import Url
+import Url exposing (Url)
+import Viewer exposing (Viewer)
 
 
 
@@ -14,8 +20,11 @@ import Url
 -- Should separate by pages
 
 
-type Model =
-    Home Home.Model
+type Model
+    = Home Home.Model
+    | Login Login.Model
+    | Redirect Session
+    | NotFound Session
 
 
 
@@ -27,10 +36,36 @@ type Model =
 --     = Home Home.Model
 -- | CardModel Card.Model
 -- { buttonModel : Button.Model }
+-- init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+-- init flags url key =
+--     ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
+-- init flags url key
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key = ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
+init : Maybe Viewer -> Url -> Nav.Key -> ( Model, Cmd Msg )
+init maybeViewer url navKey =
+    changeRouteTo (Route.fromUrl url) (Redirect (Session.fromViewer navKey maybeViewer))
+
+
+changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
+changeRouteTo maybeRoute model =
+    let
+        session =
+            toSession model
+    in
+    case maybeRoute of
+        -- Just Route.Logout ->
+        --     ( model, Api.logout )
+        Nothing ->
+            ( NotFound session, Cmd.none )
+
+        Just Route.Home ->
+            Home.init session
+                |> updateWith Home HomeMsg model
+
+        Just Route.Login ->
+            Login.init session
+                |> updateWith Login LoginMsg model
 
 
 
@@ -39,6 +74,7 @@ init flags url key = ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.seco
 
 type Msg
     = HomeMsg Home.Msg
+    | LoginMsg Login.Msg
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
 
@@ -46,7 +82,11 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model ) of
-        (HomeMsg submsg, Home submodel) -> Home.update submsg submodel |> updateWith Home HomeMsg model
+        ( HomeMsg submsg, Home submodel ) ->
+            Home.update submsg submodel |> updateWith Home HomeMsg model
+
+        ( LoginMsg submsg, Login submodel ) ->
+            Login.update submsg submodel |> updateWith Login LoginMsg model
 
         ( UrlChanged _, Home submodel ) ->
             ( model, Cmd.none )
@@ -54,8 +94,51 @@ update msg model =
         ( LinkClicked _, Home submodel ) ->
             ( model, Cmd.none )
 
+        ( _, _ ) ->
+            ( model, Cmd.none )
 
 
+
+-- don't exactly like this but its for msges from the wrong page
+-- Just Route.Register ->
+--     Register.init session
+--         |> updateWith Register GotRegisterMsg model
+-- Just (Route.Profile username) ->
+--     Profile.init session username
+--         |> updateWith (Profile username) GotProfileMsg model
+
+
+toSession : Model -> Session
+toSession page =
+    case page of
+        Home home ->
+            Home.toSession home
+
+        Login login ->
+            Login.toSession login
+
+        NotFound session ->
+            session
+
+        Redirect session ->
+            session
+
+
+
+-- Redirect session ->
+--     session
+-- NotFound session ->
+--     session
+-- Settings settings ->
+--     Settings.toSession settings
+-- Register register ->
+--     Register.toSession register
+-- Profile _ profile ->
+--     Profile.toSession profile
+-- Article article ->
+--     Article.toSession article
+-- Editor _ editor ->
+--     Editor.toSession editor
 -- case urlRequest of
 --     Browser.Internal url -> (model, Nav.pushUrl model.key (Url.toString url))
 --     Browser.External url -> (model, Nav.pushUrl model.key (Url.toString url))
@@ -87,6 +170,24 @@ view model =
                 [ Html.map HomeMsg (Home.view submodel) ]
             }
 
+        Login submodel ->
+            { title = "Login"
+            , body =
+                [ Html.map LoginMsg (Login.view submodel) ]
+            }
+
+        Redirect _ ->
+            { title = "Redirect"
+            , body =
+                [ Html.text "redirecting" ]
+            }
+
+        NotFound _ ->
+            { title = "NotFound"
+            , body =
+                [ Html.text "notfounding" ]
+            }
+
 
 
 -- view : (subMsg-> Msg )->Model -> Html Msg
@@ -108,15 +209,28 @@ subscriptions _ =
     Sub.none
 
 
-main : Program () Model Msg
+
+-- main : Program () Model Msg
+-- main =
+--     Browser.application
+--         { init = init
+--         , view = view
+--         , update = update
+--         , subscriptions = subscriptions
+--         , onUrlRequest = LinkClicked
+--         , onUrlChange = UrlChanged
+--         }
+
+
+main : Program Value Model Msg
 main =
-    Browser.application
+    Api.application Viewer.decoder
         { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        , onUrlRequest = LinkClicked
         , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
+        , subscriptions = subscriptions
+        , update = update
+        , view = view
         }
 
 

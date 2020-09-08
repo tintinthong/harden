@@ -9,7 +9,8 @@ import Html exposing (Html)
 import Http
 import Json.Decode exposing (Decoder, Error, at, bool, decodeString, field, float, list, map2, map3, string)
 import Paginate
-import String as String
+import Session exposing (Session)
+import String
 
 
 type Request
@@ -20,11 +21,17 @@ type Request
 
 
 type alias Model =
-    { searchString : String
+    { session : Session
+    , searchString : String
     , request : Request
     , errorMessage : Maybe String
     , paginatedList : Paginate.PaginatedList Card
     }
+
+
+toSession : Model -> Session
+toSession model =
+    model.session
 
 
 type Msg
@@ -81,9 +88,11 @@ getMovies searchString =
         }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { searchString = ""
+init : Session -> ( Model, Cmd Msg )
+init session =
+    ( {
+        session = session
+      , searchString = ""
       , request = Loading
       , errorMessage = Nothing
       , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
@@ -99,7 +108,7 @@ subscriptions model =
 
 paginateSize : Int
 paginateSize =
-   12 
+    12
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

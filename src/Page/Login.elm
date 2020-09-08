@@ -20,6 +20,11 @@ type alias Model =
     }
 
 
+toSession : Model -> Session
+toSession model =
+    model.session
+
+
 type alias Form =
     { email : String
     , password : String
@@ -178,12 +183,9 @@ updateForm transform model =
     ( { model | form = transform model.form }, Cmd.none )
 
 
-view : Model -> { title : String, content : Html Msg }
+view :Model-> Html Msg
 view model =
-    { title = "Login"
-    , content =
-        layout [ width fill, height fill ] <|
-            column [ width fill, centerX ]
-                [ button
-                ]
-    }
+    layout [ width fill, height fill ] <|
+        column [ width fill, centerX ]
+            [ button
+            ]
