@@ -21,7 +21,7 @@ app.ports.storeCache.subscribe(function (val) {
 
   // Report that the new session was stored successfully.
   setTimeout(function () {
-    app.ports.onStoreChange.sendMessage(val);
+    app.ports.onStoreChange.send(val);
   }, 0);
 });
 
@@ -30,7 +30,7 @@ window.addEventListener(
   "storage",
   function (event) {
     if (event.storageArea === localStorage && event.key === storageKey) {
-      app.ports.onStoreChange.sendMessage(event.newValue);
+      app.ports.onStoreChange.send(event.newValue);
     }
   },
   false

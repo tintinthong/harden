@@ -1,4 +1,4 @@
-module Session exposing (Session, cred, fromViewer, navKey, viewer)
+module Session exposing (Session, cred, fromViewer, navKey, viewer, changes)
 
 import Api exposing (Cred)
 import Avatar exposing (Avatar)

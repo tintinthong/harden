@@ -144,11 +144,13 @@ update msg model =
                     let
                         json =
                             Encode.object [ ( "email", Encode.string validForm.email ), ( "password", Encode.string validForm.password ) ]
-                        _ = Debug.log "Login:json" json
+
+                        _ =
+                            Debug.log "Login:json" json
                     in
                     ( { model | problems = [] }
                     , Http.post
-                        { url = "http://localhost:3001/rest/v1/login/" 
+                        { url = "http://localhost:3001/rest/v1/login/"
                         , body = Http.jsonBody json
                         , expect = Http.expectJson CompletedLogin (Api.decoderFromCred Viewer.decoder)
                         }
@@ -181,6 +183,10 @@ update msg model =
             )
 
         GotSession session ->
+            let
+                _ =
+                    Debug.log "update:GotSession" session
+            in
             ( { model | session = session }
             , Route.replaceUrl (Session.navKey session) Route.Home
             )
@@ -264,3 +270,8 @@ view model =
                 , label = Element.text "Login"
                 }
             ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Session.changes GotSession (Session.navKey model.session)

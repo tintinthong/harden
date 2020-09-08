@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Api
 import Browser
@@ -52,7 +52,9 @@ changeRouteTo maybeRoute model =
     let
         session =
             toSession model
-        _ = Debug.log "changeRouteTo: session" session
+
+        _ =
+            Debug.log "changeRouteTo: session" session
     in
     case maybeRoute of
         -- Just Route.Logout ->
@@ -78,6 +80,7 @@ type Msg
     | LoginMsg Login.Msg
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
+    | GotSession Session
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -95,6 +98,13 @@ update msg model =
 
         ( LinkClicked _, Home submodel ) ->
             ( model, Cmd.none )
+
+        ( GotSession session, Redirect _ ) ->
+            let
+                _ =
+                    Debug.log "update: Got Session " session
+            in
+            ( Redirect session, Route.replaceUrl (Session.navKey session) Route.Home )
 
         ( _, _ ) ->
             ( model, Cmd.none )
@@ -207,8 +217,22 @@ view model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model of
+        NotFound _ ->
+            Sub.none
+
+        Redirect _ ->
+            let
+                _ = Debug.log "subscriptions: redirect"
+            in
+            Session.changes GotSession (Session.navKey (toSession model))
+
+        Home _ ->
+            Sub.none
+
+        Login _ ->
+            Sub.none
 
 
 
