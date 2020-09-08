@@ -49,6 +49,9 @@ href targetRoute =
 
 replaceUrl : Nav.Key -> Route -> Cmd msg
 replaceUrl key route =
+    let
+        _ = Debug.log "hello" key
+    in
     Nav.replaceUrl key (routeToString route)
 
 

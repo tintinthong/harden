@@ -52,6 +52,7 @@ changeRouteTo maybeRoute model =
     let
         session =
             toSession model
+        _ = Debug.log "changeRouteTo: session" session
     in
     case maybeRoute of
         -- Just Route.Logout ->

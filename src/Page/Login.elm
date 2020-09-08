@@ -10,7 +10,7 @@ import Element.Region as Region
 import Html exposing (Html)
 import Http
 import Json.Decode exposing (string)
-import Json.Encode
+import Json.Encode as Encode
 import Route
 import Session exposing (Session)
 import Viewer exposing (Viewer)
@@ -140,11 +140,16 @@ update msg model =
     case Debug.log "msg" msg of
         SubmittedForm ->
             case validate model.form of
-                Ok validForm ->
+                Ok (Trimmed validForm) ->
+                    let
+                        json =
+                            Encode.object [ ( "email", Encode.string validForm.email ), ( "password", Encode.string validForm.password ) ]
+                        _ = Debug.log "Login:json" json
+                    in
                     ( { model | problems = [] }
                     , Http.post
-                        { url = "/login"
-                        , body = Http.emptyBody --validForm
+                        { url = "http://localhost:3001/rest/v1/login/" 
+                        , body = Http.jsonBody json
                         , expect = Http.expectJson CompletedLogin (Api.decoderFromCred Viewer.decoder)
                         }
                     )
@@ -255,7 +260,7 @@ view model =
 
                 -- , width fill
                 ]
-                { onPress = Nothing
+                { onPress = Just SubmittedForm
                 , label = Element.text "Login"
                 }
             ]

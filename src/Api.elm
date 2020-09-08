@@ -15,7 +15,6 @@ import Username exposing (Username)
 type Cred
     = Cred Username String
 
-
 username : Cred -> Username
 username (Cred val _) =
     val
@@ -95,8 +94,12 @@ application :
     -> Program Value model msg
 application viewerDecoder config =
     let
-        init flags url navKey =
+         init flags url navKey =
             let
+                _ = Debug.log "application:init" init
+                _ = Debug.log "application:flags" flags
+                _ = Debug.log "application:url" url
+                _ = Debug.log "application:navKey" navKey
                 maybeViewer =
                     Decode.decodeValue Decode.string flags
                         |> Result.andThen (Decode.decodeString (storageDecoder viewerDecoder))

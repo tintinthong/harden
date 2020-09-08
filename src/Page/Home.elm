@@ -90,6 +90,10 @@ getMovies searchString =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
+    let
+        _ =
+            Debug.log "Session" session
+    in
     ( { session = session
       , searchString = ""
       , request = Loading
