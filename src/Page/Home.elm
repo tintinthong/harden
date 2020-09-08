@@ -236,22 +236,11 @@ navbar =
         handler newSearchString =
             SearchChanged newSearchString
 
-        centerCol =
-            Element.row []
-                [ Input.text []
-                    { label = Input.labelAbove [] (Element.el [] (text <| "Type in name of movie"))
-                    , onChange = handler
-                    , text = "Rick"
-                    , placeholder = Nothing
-                    }
-                , buttonSearch
-                ]
-
         rightCols =
             List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
                 [ "Home", "Login" ]
     in
-    Element.row rowAttrs (leftCol :: centerCol :: rightCols)
+    Element.row rowAttrs (leftCol ::  rightCols)
 
 
 searchbar : Element Msg
@@ -567,6 +556,7 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
+                    , searchbar
                     , grid model
                     ]
 
@@ -574,6 +564,7 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
+                    , searchbar
                     , grid model
                     ]
 
@@ -581,6 +572,7 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
+                    , searchbar
                     , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
                     ]
@@ -589,5 +581,6 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
+                    , searchbar
                     , grid model
                     ]
