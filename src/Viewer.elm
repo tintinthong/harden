@@ -1,11 +1,11 @@
-module Viewer exposing (Viewer, avatar, cred, decoder, minPasswordChars, username)
+module Viewer exposing (Viewer, avatar, cred, decoder, minPasswordChars, store, username)
 
 {-| The logged-in user currently viewing this page. It stores enough data to
 be able to render the menu bar (username and avatar), along with Cred so it's
 impossible to have a Viewer if you aren't logged in.
 -}
 
-import Api exposing (Cred)
+import Api exposing (Cred, storeCredWith)
 import Avatar exposing (Avatar)
 import Email exposing (Email)
 import Json.Decode as Decode exposing (Decoder)
@@ -59,9 +59,8 @@ decoder =
         |> custom (Decode.field "image" Avatar.decoder)
 
 
-
--- store : Viewer -> Cmd msg
--- store (Viewer avatarVal credVal) =
---     Api.storeCredWith
---         credVal
---         avatarVal
+store : Viewer -> Cmd msg
+store (Viewer avatarVal credVal) =
+    Api.storeCredWith
+        credVal
+        avatarVal
