@@ -90,8 +90,7 @@ getMovies searchString =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( {
-        session = session
+    ( { session = session
       , searchString = ""
       , request = Loading
       , errorMessage = Nothing
@@ -113,7 +112,7 @@ paginateSize =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case Debug.log "msg" msg of
         SendHttpRequest ->
             ( { model | request = Loading }, getMovies model.searchString )
 
@@ -227,8 +226,9 @@ navbar =
             Element.column colOpts [ makePage pageName ]
 
         leftCol =
-            makeCol [ alignLeft ] "Logo"
+            makeCol [ alignLeft ] ""
 
+        -- can put logo here f s
         handler newSearchString =
             SearchChanged newSearchString
 
@@ -245,9 +245,43 @@ navbar =
 
         rightCols =
             List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
-                [ "Home", "Stats", "Login" ]
+                [ "Home", "Login" ]
     in
     Element.row rowAttrs (leftCol :: centerCol :: rightCols)
+
+
+searchbar : Element Msg
+searchbar =
+    let
+        rowAttrs =
+            [ Border.width 2
+            , padding 10
+            , width <| fill
+            , spacing 10
+            ]
+
+        elAttrs =
+            [ padding 5
+            , width fill
+            , alignLeft
+            , Font.center
+            ]
+
+        handler newSearchString =
+            SearchChanged newSearchString
+
+        centerCol =
+            Element.row []
+                [ Input.text []
+                    { label = Input.labelAbove [] (Element.el [] (text <| "Type in name of movie"))
+                    , onChange = handler
+                    , text = "Rick"
+                    , placeholder = Nothing
+                    }
+                , buttonSearch
+                ]
+    in
+    centerCol
 
 
 

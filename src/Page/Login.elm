@@ -3,7 +3,10 @@ module Page.Login exposing (..)
 import Api
 import Element exposing (..)
 import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
+import Element.Region as Region
 import Html exposing (Html)
 import Http
 import Json.Decode exposing (string)
@@ -102,7 +105,7 @@ trimFields form =
 
 
 blue =
-    rgb255 238 238 238
+    rgb255 0 0 238
 
 
 purple =
@@ -116,7 +119,7 @@ button =
             [ Background.color purple ]
         ]
         { onPress = Just SubmittedForm
-        , label = text "My Button"
+        , label = text "Login"
         }
 
 
@@ -134,7 +137,7 @@ init session =
 
 
 update msg model =
-    case msg of
+    case Debug.log "msg" msg of
         SubmittedForm ->
             case validate model.form of
                 Ok validForm ->
@@ -183,9 +186,76 @@ updateForm transform model =
     ( { model | form = transform model.form }, Cmd.none )
 
 
-view :Model-> Html Msg
+white =
+    Element.rgb 1 1 1
+
+
+grey =
+    Element.rgb 0.9 0.9 0.9
+
+
+red =
+    Element.rgb 0.8 0 0
+
+
+darkBlue =
+    Element.rgb 0 0 0.9
+
+
+view : Model -> Html Msg
 view model =
-    layout [ width fill, height fill ] <|
-        column [ width fill, centerX ]
-            [ button
+    Element.layout
+        [ Font.size 20
+        ]
+    <|
+        Element.column
+            [ width (px 800)
+            , height shrink
+            , centerY
+            , centerX
+            , spacing 36
+            , padding 10
+            ]
+            [ el
+                [ Region.heading 1
+                , alignLeft
+                , Font.size 36
+                ]
+                (text "Login Form")
+            , Input.username
+                [ spacing 12
+                , below
+                    (el
+                        [ Font.color red
+                        , Font.size 14
+                        , alignRight
+                        , moveDown 6
+                        ]
+                        (text "This one is wrong")
+                    )
+                ]
+                { text = model.form.email
+                , placeholder = Just (Input.placeholder [] (text "Write Email here fool"))
+                , onChange = \newEmail -> EnteredEmail newEmail
+                , label = Input.labelAbove [ Font.size 14 ] (text "Email")
+                }
+            , Input.currentPassword [ spacing 12 ]
+                { text = model.form.password
+                , placeholder = Nothing
+                , onChange = \newPassword -> EnteredPassword newPassword
+                , label = Input.labelAbove [ Font.size 14 ] (text "Password")
+                , show = False
+                }
+            , Input.button
+                [ Background.color blue
+                , Font.color white
+                , Border.color darkBlue
+                , paddingXY 32 16
+                , Border.rounded 3
+
+                -- , width fill
+                ]
+                { onPress = Nothing
+                , label = Element.text "Login"
+                }
             ]

@@ -16,10 +16,13 @@ import Username exposing (Username)
 type Route
     = Home
     | Login
-    -- | Logout
-    -- | Register
-    -- | Settings
-    -- | Profile Username
+
+
+
+-- | Logout
+-- | Register
+-- | Settings
+-- | Profile Username
 
 
 parser : Parser (Route -> a) a
@@ -27,6 +30,7 @@ parser =
     oneOf
         [ Parser.map Home Parser.top
         , Parser.map Login (s "login")
+
         -- , Parser.map Logout (s "logout")
         -- , Parser.map Settings (s "settings")
         -- , Parser.map Profile (s "profile" </> Username.urlParser)
@@ -75,14 +79,13 @@ routeToPieces page =
         Login ->
             [ "login" ]
 
-        -- Logout ->
-        --     [ "logout" ]
 
-        -- Register ->
-        --     [ "register" ]
 
-        -- Settings ->
-        --     [ "settings" ]
-
-        -- Profile username ->
-        --     [ "profile", Username.toString username ]
+-- Logout ->
+--     [ "logout" ]
+-- Register ->
+--     [ "register" ]
+-- Settings ->
+--     [ "settings" ]
+-- Profile username ->
+--     [ "profile", Username.toString username ]

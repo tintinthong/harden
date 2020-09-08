@@ -81,6 +81,7 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    -- case Debug.log "msg, model" (msg,model) of
     case ( msg, model ) of
         ( HomeMsg submsg, Home submodel ) ->
             Home.update submsg submodel |> updateWith Home HomeMsg model
