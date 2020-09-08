@@ -137,7 +137,7 @@ init session =
 
 
 update msg model =
-    case Debug.log "msg" msg of
+    case Debug.log "Login:msg" msg of
         SubmittedForm ->
             case validate model.form of
                 Ok (Trimmed validForm) ->
