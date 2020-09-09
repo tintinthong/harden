@@ -100,7 +100,7 @@ init session =
       , errorMessage = Nothing
       , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
       }
-    , getMovies "Rick" 
+    , getMovies "Rick"
     )
 
 
@@ -203,44 +203,6 @@ logo =
         , Border.color <| rgb255 0xC0 0xC0 0xC0
         ]
         none
-
-
-navbar : Element Msg
-navbar =
-    let
-        rowAttrs =
-            [ Border.width 2
-            , padding 10
-            , width <| fill
-            , spacing 10
-            ]
-
-        elAttrs =
-            [ padding 5
-            , width fill
-            , alignLeft
-            , Font.center
-            ]
-
-        -- Element.msg
-        makePage pageName =
-            Element.el elAttrs (text <| pageName)
-
-        makeCol colOpts pageName =
-            Element.column colOpts [ makePage pageName ]
-
-        leftCol =
-            makeCol [ alignLeft ] ""
-
-        -- can put logo here f s
-        handler newSearchString =
-            SearchChanged newSearchString
-
-        rightCols =
-            List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
-                [ "Home", "Login" ]
-    in
-    Element.row rowAttrs (leftCol :: rightCols)
 
 
 searchbar : Element Msg
@@ -555,16 +517,15 @@ view model =
         Loading ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ navbar
-                    , searchbar
+                    [ searchbar
+
                     -- , grid model
                     ]
 
         Default ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ navbar
-                          , searchbar
+                    [ searchbar
 
                     -- , searchbar
                     -- , grid model
@@ -573,8 +534,7 @@ view model =
         Failure ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ navbar
-                    , searchbar
+                    [ searchbar
 
                     -- , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
@@ -583,7 +543,6 @@ view model =
         Success cards ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ navbar
-                    , searchbar
+                    [ searchbar
                     , grid model
                     ]

@@ -185,7 +185,7 @@ update msg model =
         GotSession session ->
             let
                 _ =
-                    Debug.log "update:GotSession" session
+                    Debug.log "update:GotSession" Session.navKey
             in
             ( { model | session = session }
             , Route.replaceUrl (Session.navKey session) Route.Home

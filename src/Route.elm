@@ -1,4 +1,4 @@
-module Route exposing (Route(..), fromUrl, href, replaceUrl)
+module Route exposing (Route(..), fromUrl, href, replaceUrl, routeToString)
 
 import Browser.Navigation as Nav
 import Html exposing (Attribute)
@@ -50,7 +50,8 @@ href targetRoute =
 replaceUrl : Nav.Key -> Route -> Cmd msg
 replaceUrl key route =
     let
-        _ = Debug.log "hello" key
+        _ = Debug.log "Route:replaceUrljb" key
+        _ = Debug.log "hRoute:replaceUrlj" route
     in
     Nav.replaceUrl key (routeToString route)
 

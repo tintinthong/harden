@@ -10,9 +10,11 @@ const app = Elm.Main.init({
   flags,
 });
 
-console.log(JSON.stringify(flags, null, 2));
-console.log(JSON.stringify(Elm, null, 2));
-console.log(JSON.stringify(app, null, 2));
+// console.log(JSON.stringify(flags, null, 2));
+// console.log(JSON.stringify(Elm, null, 2));
+// console.log(JSON.stringify(app, null, 2));
+// console.log(JSON.stringify(app.ports, null, 2));
+console.log(app.ports);
 
 app.ports.storeCache.subscribe(function (val) {
   if (val === null) {

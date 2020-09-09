@@ -6,6 +6,7 @@ import Browser.Navigation as Nav
 import Html exposing (Html, div, h1, img, text)
 import Html.Attributes exposing (src)
 import Json.Decode as Decode exposing (Value)
+import Page
 import Page.Home as Home
 import Page.Login as Login
 import Route exposing (Route)
@@ -13,6 +14,7 @@ import Session exposing (Session)
 import Tuple
 import Url exposing (Url)
 import Viewer exposing (Viewer)
+import Element 
 
 
 
@@ -45,10 +47,15 @@ type Model
 init : Maybe Viewer -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init maybeViewer url navKey =
     let
-        _ = Debug.log "Main:url" url
-        _ = Debug.log "Main:navKey" navKey
-        _ = Debug.log "Main:navKey" maybeViewer
-    in 
+        _ =
+            Debug.log "Main:url" url
+
+        _ =
+            Debug.log "Main:navKey" navKey
+
+        _ =
+            Debug.log "Main:navKey" maybeViewer
+    in
     changeRouteTo (Route.fromUrl url) (Redirect (Session.fromViewer navKey maybeViewer))
 
 
@@ -61,7 +68,7 @@ changeRouteTo maybeRoute model =
         _ =
             Debug.log "changeRouteTo: session" session
     in
-    case maybeRoute of
+    case Debug.log "changeRouteZTo: maybeRoute" maybeRoute of
         -- Just Route.Logout ->
         --     ( model, Api.logout )
         Nothing ->
@@ -98,11 +105,33 @@ update msg model =
         ( LoginMsg submsg, Login submodel ) ->
             Login.update submsg submodel |> updateWith Login LoginMsg model
 
-        ( UrlChanged _, Home submodel ) ->
-            ( model, Cmd.none )
+        ( UrlChanged url, _ ) ->
+            changeRouteTo (Route.fromUrl url) model
 
-        ( LinkClicked _, Home submodel ) ->
-            ( model, Cmd.none )
+        ( LinkClicked urlRequest, _ ) ->
+            case urlRequest of
+                Browser.Internal url ->
+                    case url.fragment of
+                        Nothing ->
+                            -- If we got a link that didn't include a fragment,
+                            -- it's from one of those (href "") attributes that
+                            -- we have to include to make the RealWorld CSS work.
+                            --
+                            -- In an application doing path routing instead of
+                            -- fragment-based routing, this entire
+                            -- `case url.fragment of` expression this comment
+                            -- is inside would be unnecessary.
+                            ( model, Cmd.none )
+
+                        Just _ ->
+                            ( model
+                            , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
+                            )
+
+                Browser.External href ->
+                    ( model
+                    , Nav.load href
+                    )
 
         ( GotSession session, Redirect _ ) ->
             let
@@ -173,26 +202,100 @@ updateWith toModel toMsg model ( subModel, subCmd ) =
     )
 
 
+modelToSession : Model -> Session
+modelToSession page =
+    case page of
+        Home home ->
+            Home.toSession home
 
----- VIEW ----
--- view : Model -> Html Msg
+        Login login ->
+            Login.toSession login
+
+        NotFound session ->
+            session
+
+        Redirect session ->
+            session
+
+
+
+-- type alias Document msg =
+--     { title : String
+--     , body : List (Html msg)
+--     }
+
+
+viewNew : Model -> Browser.Document Msg
+viewNew model =
+    let
+        viewer =
+            Session.viewer <| modelToSession model
+
+        viewPage page toMsg pageView =
+            { title = Page.pageToString page
+            , body =
+                (Page.viewNew viewer page)
+                    |> Element.layout [] 
+                    |> List.singleton
+            }
+    in case model of
+        Home submodel ->
+            viewPage Page.Home HomeMsg (Home.view submodel)
+        Login submodel ->
+            viewPage Page.Login LoginMsg (Login.view submodel)
+        Redirect _ ->
+            { title = "Redirect"
+            , body =
+                [ Html.text "redirecting" ]
+            }
+
+        NotFound _ ->
+            { title = "NotFound"
+            , body =
+                [ Html.text "notfounding" ]
+            }
 
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        viewer =
+            Session.viewer (toSession model)
+
+        viewPage page toMsg config =
+            let
+                { title, body } =
+                    Page.view viewer page config
+            in
+            { title = title
+            , body = List.map (Html.map toMsg) body
+            }
+    in
     case model of
         Home submodel ->
-            { title = "Home"
-            , body =
-                [ Html.map HomeMsg (Home.view submodel) ]
-            }
+            viewPage Page.Home
+                HomeMsg
+                { title = "Home"
+                , content = Home.view submodel
+                }
 
         Login submodel ->
-            { title = "Login"
-            , body =
-                [ Html.map LoginMsg (Login.view submodel) ]
-            }
+            viewPage Page.Login
+                LoginMsg
+                { title = "Login"
+                , content = Login.view submodel
+                }
 
+        -- Login submodel ->
+        --     { title = "Login"
+        --     , body =
+        --         [ Html.map LoginMsg (Login.view submodel) ]
+        --     }
+        -- Home submodel ->
+        --     { title = "Home"
+        --     , body =
+        --         [ Html.map HomeMsg (Home.view submodel) ]
+        --     }
         Redirect _ ->
             { title = "Redirect"
             , body =
@@ -211,7 +314,6 @@ view model =
 -- view toMsg model =
 --     case model of
 --         Home submodel ->  Html.map toMsg (Home.view submodel)
--- Html.map HomeMsg (Home.view submodel)
 -- case model of
 --             Button _ -> Button.view model
 -- div []
@@ -229,15 +331,16 @@ subscriptions model =
 
         Redirect _ ->
             let
-                _ = Debug.log "subscriptions: redirect"
+                _ =
+                    Debug.log "subscriptions: redirect"
             in
             Session.changes GotSession (Session.navKey (toSession model))
 
-        Home _ ->
-            Sub.none
+        Home home ->
+            Sub.map HomeMsg (Home.subscriptions home)
 
-        Login _ ->
-            Sub.none
+        Login loginModel ->
+            Sub.map LoginMsg (Login.subscriptions loginModel)
 
 
 
