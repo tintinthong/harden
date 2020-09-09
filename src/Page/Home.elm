@@ -100,7 +100,7 @@ init session =
       , errorMessage = Nothing
       , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
       }
-    , getMovies "Rick"
+    , getMovies "Rick" 
     )
 
 
@@ -240,7 +240,7 @@ navbar =
             List.map (\name -> makeCol [ Border.width 2, padding 10, alignRight ] name)
                 [ "Home", "Login" ]
     in
-    Element.row rowAttrs (leftCol ::  rightCols)
+    Element.row rowAttrs (leftCol :: rightCols)
 
 
 searchbar : Element Msg
@@ -551,21 +551,23 @@ loremipsum =
 
 view : Model -> Html Msg
 view model =
-    case model.request of
+    case Debug.log "Home:view" model.request of
         Loading ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
                     , searchbar
-                    , grid model
+                    -- , grid model
                     ]
 
         Default ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ navbar
-                    , searchbar
-                    , grid model
+                          , searchbar
+
+                    -- , searchbar
+                    -- , grid model
                     ]
 
         Failure ->
@@ -573,7 +575,8 @@ view model =
                 column [ width fill, centerX ]
                     [ navbar
                     , searchbar
-                    , grid model
+
+                    -- , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
                     ]
 

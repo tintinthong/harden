@@ -2,13 +2,15 @@ import "./main.css";
 import { Elm } from "./Main.elm";
 import * as serviceWorker from "./serviceWorker";
 
-Elm.Main.init({
-  node: document.getElementById("root"),
-});
-
 var storageKey = "store";
 var flags = localStorage.getItem(storageKey);
-var app = Elm.Main.init({ flags: flags });
+
+const app = Elm.Main.init({
+  node: document.getElementById("root"),
+  flags,
+});
+
+console.log(JSON.stringify(flags, null, 2));
 console.log(JSON.stringify(Elm, null, 2));
 console.log(JSON.stringify(app, null, 2));
 

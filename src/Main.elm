@@ -44,6 +44,11 @@ type Model
 
 init : Maybe Viewer -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init maybeViewer url navKey =
+    let
+        _ = Debug.log "Main:url" url
+        _ = Debug.log "Main:navKey" navKey
+        _ = Debug.log "Main:navKey" maybeViewer
+    in 
     changeRouteTo (Route.fromUrl url) (Redirect (Session.fromViewer navKey maybeViewer))
 
 
