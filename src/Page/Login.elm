@@ -1,6 +1,7 @@
 module Page.Login exposing (..)
 
 import Api
+import Data.Color exposing (..)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -14,7 +15,6 @@ import Json.Encode as Encode
 import Route
 import Session exposing (Session)
 import Viewer exposing (Viewer)
-import Data.Color exposing (..)
 
 
 type alias Model =
@@ -105,7 +105,6 @@ trimFields form =
         }
 
 
-
 button =
     Input.button
         [ Background.color blue
@@ -191,28 +190,25 @@ updateForm transform model =
     ( { model | form = transform model.form }, Cmd.none )
 
 
-
 view : Model -> Html Msg
 view model =
     Element.layout
-        [
-        ]
+        []
     <|
         Element.column
-            [
-             centerX
+            [ centerX
             , spacing 36
             , padding 10
-                , Border.width 2 
+            , Border.width 2
             ]
             [ el
-                [
-                alignLeft
-                , Font.size 24 
+                [ alignLeft
+                , Font.size 24
                 ]
                 (text "Login")
             , Input.username
                 [ spacing 12
+
                 -- , below
                 --     (el
                 --         [ Font.color red

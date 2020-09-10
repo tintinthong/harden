@@ -212,14 +212,13 @@ searchbar =
         rowAttrs =
             [ Border.width 2
             , padding 10
-            , width <| fill
+            , width fill
             , spacing 10
             ]
 
         elAttrs =
             [ padding 5
             , width fill
-            , alignLeft
             , Font.center
             ]
 
@@ -227,9 +226,10 @@ searchbar =
             SearchChanged newSearchString
 
         centerCol =
-            Element.row [ centerX, spacing 10 ]
-                [ Element.el []
-                    (Input.text []
+            Element.row [ centerX, spacing 10 , Border.width 2]
+                [ Element.el [centerX]
+                    (Input.text [
+                         ]
                         { label = Input.labelAbove [] (Element.el [] (text <| "Enter a show"))
                         , onChange = handler
                         , text = "Rick"
