@@ -12,7 +12,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Http
-import Json.Decode exposing (Decoder, Error, at, bool, decodeString, field, float, list, map2, map3, string)
+import Json.Decode exposing (Decoder, Error, andThen, at, bool, decodeString, field, float, list, map2, map3, maybe, string)
 import Paginate
 import Session exposing (Session)
 import String
@@ -42,7 +42,17 @@ type ShowType
     | Series
 
 
-filterShowType : String -> Paginate.PaginatedList Card -> Paginate.PaginatedList Card
+showTypeToString : ShowType -> String
+showTypeToString showtype =
+    case showtype of
+        Movie ->
+            "movie"
+
+        Series ->
+            "series"
+
+
+filterShowType : Maybe ShowType -> Paginate.PaginatedList Card -> Paginate.PaginatedList Card
 filterShowType showtype shows =
     let
         isShowType card =
@@ -68,17 +78,36 @@ movieDecoder : Decoder Card
 movieDecoder =
     map3 Card
         (at [ "Title" ] string)
-        (at [ "Type" ] string)
+        (at [ "Type" ] showTypeDecoder)
         (at [ "Poster" ] string)
-
 
 moviesDecoder : Decoder (List Card)
 moviesDecoder =
     field "Search" <| list movieDecoder
 
+showTypeDecoder : Decoder (Maybe ShowType)
+showTypeDecoder =
+   maybe (Json.Decode.map ( stringToShowType) (field "Type" string))
+-- \showtypestring -> (Dict.get showtypestring dictStringToShowType)
+
+-- dictStringToShowType =
+--     Dict.fromList
+--         [ ( "movie", Movie )
+--         , ( "series", Series )
+--         ]
+
+
+stringToShowType showtypeString =
+    case showtypeString of
+        "movie"-> Movie
+        "series"-> Series
+        _ -> Series
+
+
+
 
 type alias Card =
-    { title : String, showType : String, imageUrl : String }
+    { title : String, showType : Maybe ShowType, imageUrl : String }
 
 
 
@@ -108,7 +137,7 @@ init session =
             Debug.log "Session" session
     in
     ( { session = session
-      , searchString = "Sleep"
+      , searchString = "Rick"
       , request = Loading
       , errorMessage = Nothing
       , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
@@ -116,7 +145,7 @@ init session =
       , seriesChecked = True
       , movieChecked = True
       }
-    , getMovies "Sleep"
+    , getMovies "Rick"
     )
 
 
@@ -343,34 +372,6 @@ grid model =
 
 
 
--- grid : Request -> Element msg
--- grid request =
---     let
---         colAttrs =
---             [ padding 10
---             ]
---         rowAttrs =
---             [ padding 10
---             , spacing 10
---             ]
---         elAttrs =
---             [ padding 5
---             , Font.center
---             ]
---         makeCardCol c =
---             Element.column colAttrs [ c ]
---     in
---     case request of
---         Default ->
---             Element.wrappedRow rowAttrs []
---         Failure ->
---             Element.wrappedRow rowAttrs []
---         Loading ->
---             Element.wrappedRow rowAttrs []
---         Success cards ->
---             Element.wrappedRow rowAttrs (List.map (makeCardCol << cardView) cards)
-
-
 cardView : Card -> Element msg
 cardView cardData =
     Element.column
@@ -413,20 +414,30 @@ cutText maxChar textToCut =
     String.left maxChar textToCut ++ ".."
 
 
-cardHeader : { title : String, showType : String } -> Element msg
-cardHeader titleObj =
+cardHeader : { title : String, showType : Maybe ShowType } -> Element msg
+cardHeader { title, showType } =
+    let
+        _ = Debug.log "showType" showType
+        showTypeString =
+            case showType of
+                Just x ->
+                    showTypeToString x
+
+                Nothing ->
+                    "No Type Found"
+    in
     Element.column
         [ centerX, height <| fillPortion 2 ]
         [ Element.paragraph
             (titleAttrs ++ [ cardTitleMaxWidth, cardTitleHeight, Border.width 2 ])
-            [ Element.text <| titleObj.title ]
+            [ Element.text <| title ]
         , Element.el
             [ Font.size 15
             , Font.extraLight
             , Border.width 2
             , alignLeft
             ]
-            (Element.text <| String.right 100 <| titleObj.showType)
+            (Element.text <| String.right 100 <| showTypeString)
         ]
 
 
