@@ -1,4 +1,4 @@
-module Page exposing (Page(..), viewNew, pageToString, view, viewErrors)
+module Page exposing (Page(..), pageToString, view, viewErrors)
 
 import Api exposing (Cred)
 import Avatar
@@ -22,33 +22,8 @@ type Page
     | Login
 
 
-viewNew : Maybe Viewer -> Page -> Element msg
-viewNew maybeViewer page =
-    Element.column []
-        [ header
-        , menu maybeViewer [ Home, Login ]
-        , footerNew
-        ]
 
-
-view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Document msg
-view maybeViewer page { title, content } =
-    { title = title ++ " - Conduit"
-    , body = viewHeader page maybeViewer :: content :: [ viewFooter ]
-    }
-
-
-viewHeader : Page -> Maybe Viewer -> Html msg
-viewHeader page maybeViewer =
-    nav [ class "navbar navbar-light" ]
-        [ div [ class "container" ]
-            [ a [ class "navbar-brand", Route.href Route.Home ]
-                [ Html.text "conduit" ]
-            , ul [ class "nav navbar-nav pull-xs-right" ] <|
-                navbarLink page Route.Home [ Html.text "Home" ]
-                    :: viewMenu page maybeViewer
-            ]
-        ]
+-- Util
 
 
 pageToString : Page -> String
@@ -58,11 +33,7 @@ pageToString page =
             "Home"
 
         Login ->
-            "Home"
-
-
-
--- Why are there page and route
+            "Login"
 
 
 pageToRoute : Page -> Route
@@ -73,110 +44,6 @@ pageToRoute page =
 
         Login ->
             Route.Login
-
-
-header : Element msg
-header =
-    Element.column [] [ Element.text "Header" ]
-
-
-menu : Maybe Viewer -> List Page -> Element msg
-menu maybeViewer pages =
-    let
-        makeLink pageName =
-            Element.el
-                [ padding 5
-                , width fill
-                , alignLeft
-                , Font.center
-                ]
-                (Element.link [] { label = Element.text pageName, url = Route.routeToString Route.Home })
-
-        makeColumn colAttrs link =
-            Element.column colAttrs [ link ]
-
-        pageButtons =
-            pages
-                |> List.map pageToString
-                |> List.map makeLink
-                |> List.map (makeColumn [])
-    in
-    Element.row
-        [ Border.width 2
-        , padding 10
-        , width fill
-        , spacing 10
-        ]
-        []
-
-
-footerNew : Element msg
-footerNew =
-    row
-        [ width fill
-        , padding 10
-        , Background.color <| rgb255 0xFF 0xFC 0xF6
-        , Border.color <| rgb255 0xC0 0xC0 0xC0
-        ]
-        [ column [ alignRight, spacing 10 ]
-            [ el [ alignRight ] <| Element.text "Services"
-            , el [ alignRight ] <| Element.text "About"
-            , el [ alignRight ] <| Element.text "Contact"
-            ]
-        ]
-
-
-viewMenu : Page -> Maybe Viewer -> List (Html msg)
-viewMenu page maybeViewer =
-    let
-        linkTo =
-            navbarLink page
-    in
-    case maybeViewer of
-        Just viewer ->
-            let
-                username =
-                    Viewer.username viewer
-
-                avatar =
-                    Viewer.avatar viewer
-            in
-            [ -- linkTo Route.NewArticle [ i [ class "ion-compose" ] [], text "\u{00A0}New Post" ]
-              -- , linkTo Route.Settings [ i [ class "ion-gear-a" ] [], text "\u{00A0}Settings" ]
-              -- , linkTo
-              --     (Route.Profile username)
-              --     [ img [ class "user-pic", Avatar.src avatar ] []
-              --     , Username.toHtml username
-              --     ]
-              linkTo Route.Home [ Html.text "Go Home" ]
-            , linkTo Route.Login [ Html.text "Login" ]
-            ]
-
-        Nothing ->
-            [ linkTo Route.Login [ Html.text "Sign in" ]
-
-            -- , linkTo Route.Register [ text "Sign up" ]
-            ]
-
-
-viewFooter : Html msg
-viewFooter =
-    footer []
-        [ div [ class "container" ]
-            [ a [ class "logo-font", href "/" ] [ Html.text "conduit" ]
-            , span [ class "attribution" ]
-                [ Html.text "An interactive learning project from "
-                , a [ href "https://thinkster.io" ] [ Html.text "Thinkster" ]
-                , Html.text ". Code & design licensed under MIT."
-                ]
-            ]
-        ]
-
-
-navbarLink : Page -> Route -> List (Html msg) -> Html msg
-navbarLink page route linkContent =
-    li [ classList [ ( "nav-item", True ), ( "active", isActive page route ) ] ]
-        [ a [ class "nav-link", Route.href route ] linkContent ]
 
 
 isActive : Page -> Route -> Bool
@@ -198,6 +65,84 @@ isActive page route =
         --     True
         _ ->
             False
+
+
+makeLink : Page -> Element msg
+makeLink page =
+    Element.el
+        [ padding 5
+        , width fill
+        , alignLeft
+        , Font.center
+        ]
+        (Element.link [] { label = Element.text <| pageToString page, url = Route.routeToString <| pageToRoute page })
+
+
+-- View
+
+
+view : Maybe Viewer -> Page -> Element msg -> Element msg
+view maybeViewer page pageContent =
+    let
+        defaultPages =
+            [ Home, Login ]
+    in
+    Element.column [
+         height fill
+         ,width fill
+        ]
+        [ header
+        , menu maybeViewer defaultPages
+        , pageContent
+        , footer defaultPages
+        ]
+
+
+header : Element msg
+header =
+    Element.column [] [ Element.text "" ]
+
+
+
+
+menu : Maybe Viewer -> List Page -> Element msg
+menu maybeViewer pages =
+    let
+        makeColumn colAttrs link =
+            column colAttrs [ link ]
+
+        pageButtons =
+            pages
+                |> List.map makeLink
+                |> List.map (makeColumn [])
+    in
+    row
+        [ Border.width 2
+        , padding 10
+        , width fill
+        , spacing 10
+        ]
+        pageButtons
+
+
+footer : List Page -> Element msg
+footer pages =
+    let
+        makeColumn colAttrs link =
+            Element.column colAttrs [ link ]
+
+        footerPageButtons =
+            pages
+                |> List.map makeLink
+                |> List.map (makeColumn [centerX]) -- maybe put centerX here
+    in
+    row
+        [ width fill
+        , padding 10
+        , Border.width 2
+        , alignBottom
+        ]
+        footerPageButtons
 
 
 {-| Render dismissable errors. We use this all over the place!

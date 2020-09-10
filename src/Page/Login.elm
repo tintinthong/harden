@@ -14,6 +14,7 @@ import Json.Encode as Encode
 import Route
 import Session exposing (Session)
 import Viewer exposing (Viewer)
+import Data.Color exposing (..)
 
 
 type alias Model =
@@ -104,13 +105,6 @@ trimFields form =
         }
 
 
-blue =
-    rgb255 0 0 238
-
-
-purple =
-    rgb255 220 238 238
-
 
 button =
     Input.button
@@ -185,7 +179,7 @@ update msg model =
         GotSession session ->
             let
                 _ =
-                    Debug.log "update:GotSession" Session.navKey
+                    Debug.log "update:GotSession" session
             in
             ( { model | session = session }
             , Route.replaceUrl (Session.navKey session) Route.Home
@@ -197,56 +191,40 @@ updateForm transform model =
     ( { model | form = transform model.form }, Cmd.none )
 
 
-white =
-    Element.rgb 1 1 1
-
-
-grey =
-    Element.rgb 0.9 0.9 0.9
-
-
-red =
-    Element.rgb 0.8 0 0
-
-
-darkBlue =
-    Element.rgb 0 0 0.9
-
 
 view : Model -> Html Msg
 view model =
     Element.layout
-        [ Font.size 20
+        [
         ]
     <|
         Element.column
-            [ width (px 800)
-            , height shrink
-            , centerY
-            , centerX
+            [
+             centerX
             , spacing 36
             , padding 10
+                , Border.width 2 
             ]
             [ el
-                [ Region.heading 1
-                , alignLeft
-                , Font.size 36
+                [
+                alignLeft
+                , Font.size 24 
                 ]
-                (text "Login Form")
+                (text "Login")
             , Input.username
                 [ spacing 12
-                , below
-                    (el
-                        [ Font.color red
-                        , Font.size 14
-                        , alignRight
-                        , moveDown 6
-                        ]
-                        (text "This one is wrong")
-                    )
+                -- , below
+                --     (el
+                --         [ Font.color red
+                --         , Font.size 14
+                --         , alignRight
+                --         , moveDown 6
+                --         ]
+                --         (text "This one is wrong")
+                --     )
                 ]
                 { text = model.form.email
-                , placeholder = Just (Input.placeholder [] (text "Write Email here fool"))
+                , placeholder = Just (Input.placeholder [] (text "ricksanchez@gmail.com"))
                 , onChange = \newEmail -> EnteredEmail newEmail
                 , label = Input.labelAbove [ Font.size 14 ] (text "Email")
                 }
@@ -261,8 +239,7 @@ view model =
                 [ Background.color blue
                 , Font.color white
                 , Border.color darkBlue
-                , paddingXY 32 16
-                , Border.rounded 3
+                , paddingXY 24 12
 
                 -- , width fill
                 ]

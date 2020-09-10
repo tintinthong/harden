@@ -1,4 +1,4 @@
-module Data.Colors exposing (..)
+module Data.Color exposing (..)
 
 import Element exposing (rgb, rgb255)
 
@@ -16,7 +16,7 @@ purple =
 
 
 white =
-    rgb255 1 1 1
+    rgb255 255 255 255 
 
 
 grey =
@@ -24,7 +24,7 @@ grey =
 
 
 red =
-    rgb 0.8 0 0
+    rgb255 255 0 0
 
 
 deleteRed =

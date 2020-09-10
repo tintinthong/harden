@@ -1,5 +1,8 @@
 module Page.Home exposing (..)
 
+import Data.Color exposing (dangerRed, deleteRed, focusedBlue, hoverBlue, red, white)
+import Data.Font exposing (paragraphAttrs, titleAttrs)
+import Data.Size exposing (..)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -111,7 +114,7 @@ subscriptions model =
 
 paginateSize : Int
 paginateSize =
-    12
+    10
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -196,9 +199,7 @@ type alias ApiError =
 logo : Element msg
 logo =
     el
-        [ width <| px 80
-        , height <| px 40
-        , Border.width 2
+        [ Border.width 2
         , Border.rounded 6
         , Border.color <| rgb255 0xC0 0xC0 0xC0
         ]
@@ -226,17 +227,35 @@ searchbar =
             SearchChanged newSearchString
 
         centerCol =
-            Element.row []
-                [ Input.text []
-                    { label = Input.labelAbove [] (Element.el [] (text <| "Type in name of movie"))
-                    , onChange = handler
-                    , text = "Rick"
-                    , placeholder = Nothing
-                    }
-                , buttonSearch
+            Element.row [ centerX, spacing 10 ]
+                [ Element.el []
+                    (Input.text []
+                        { label = Input.labelAbove [] (Element.el [] (text <| "Enter a show"))
+                        , onChange = handler
+                        , text = "Rick"
+                        , placeholder = Nothing
+                        }
+                    )
+                , Element.el [ Border.width 2, alignBottom ] buttonSearch
                 ]
     in
     centerCol
+
+
+buttonSearch : Element Msg
+buttonSearch =
+    Input.button
+        [ mouseOver
+            [ Background.color hoverBlue
+            ]
+        , Font.size 16
+        , padding 10
+        , Background.color white
+        , Element.focused
+            [ Background.color focusedBlue ]
+        , centerY
+        ]
+        { onPress = Just SendHttpRequest, label = text "Find" }
 
 
 
@@ -281,7 +300,7 @@ grid model =
                     [ paginateButton Next
                     , paginateButton Prev
                     ]
-                , Element.wrappedRow rowAttrs (List.map (makeCardCol << card) <| Paginate.page model.paginatedList)
+                , Element.wrappedRow rowAttrs (List.map (makeCardCol << cardView) <| Paginate.page model.paginatedList)
                 ]
 
 
@@ -311,54 +330,54 @@ grid model =
 --         Loading ->
 --             Element.wrappedRow rowAttrs []
 --         Success cards ->
---             Element.wrappedRow rowAttrs (List.map (makeCardCol << card) cards)
+--             Element.wrappedRow rowAttrs (List.map (makeCardCol << cardView) cards)
 
 
-card : Card -> Element msg
-card cardData =
-    Element.el
-        [ Background.color (rgb255 255 255 255)
+cardView : Card -> Element msg
+cardView cardData =
+    Element.column
+        [ -- width (fill |> maximum 300)
+          -- maxSizeOfCard
+              spacing 10
+        ,someHeight
+        , someWidth
+        , Background.color (rgb255 255 255 255)
         , Font.color (rgb255 0 0 0)
         , Border.color (rgb255 0 0 0)
         , Border.width 2
-        , padding 10
         ]
-        (Element.column
-            [ width (fill |> maximum 200)
+        [ cardHeader { title = cardData.title, subtitle = cardData.subtitle }
+        , Element.textColumn
+            [ Border.width 2
+            , width fill
+                , height <| fillPortion 8
             ]
-            [ cardHeader { title = cardData.title, subtitle = cardData.subtitle }
-            , cardImage cardData.imageUrl
+            [ cardImage cardData.imageUrl
             , cardDescription loremipsum
-            , Element.row
-                []
-                [ buttonSeeMore
-                , buttonDelete
-                ]
             ]
-        )
+
+        -- Row of buttons
+        , Element.row
+            [ alignRight, alignBottom ,height <| fillPortion 3 ]
+            [ buttonSeeMore
+
+            -- , buttonDelete
+            ]
+        ]
+
+
+cutText : Int -> String -> String
+cutText maxChar textToCut =
+    String.left maxChar textToCut ++ ".."
 
 
 cardHeader : { title : String, subtitle : String } -> Element msg
 cardHeader titleObj =
     Element.column
-        [ Font.alignRight
-        , padding 10
-        , spacing 5
-
-        -- , width (fill |> maximum 300)
-        ]
-        [ Element.el
-            [ Font.size 25
-            , Font.extraBold
-            , Font.family
-                [ Font.external
-                    { name = "Roboto"
-                    , url = "https://fonts.googleapis.com/css?family=Roboto"
-                    }
-                , Font.sansSerif
-                ]
-            ]
-            (Element.text <| titleObj.title)
+        [ centerX, Border.width 2 , cardTitleHeight, height <| fillPortion 2]
+        [ Element.paragraph
+            (titleAttrs ++ [ cardTitleMaxWidth])
+            [ Element.text <| titleObj.title ]
         , Element.el
             [ Font.size 15
             , Font.extraLight
@@ -368,33 +387,29 @@ cardHeader titleObj =
 
 
 cardDescription : String -> Element msg
-cardDescription content =
-    Element.textColumn
-        [ Font.size 12
-        , Font.extraLight
-        , Font.family
-            [ Font.external
-                { name = "Roboto"
-                , url = "https://fonts.googleapis.com/css?family=Roboto"
-                }
-            , Font.sansSerif
-            ]
-        , Font.alignLeft
-        , spacing 10
-        , padding 10
-
-        -- , width (fill |> maximum 300)
-        ]
-        [ Element.paragraph
-            []
-            [ Element.text <| content ]
-        ]
+cardDescription textContent =
+    let
+        parsedText =
+            cutText 300 textContent
+    in
+    Element.paragraph
+        (paragraphAttrs
+            ++ [ Border.width 2
+               , padding 10
+               , cardDescriptionMaxWidth
+               ]
+        )
+        [ Element.text <| parsedText ]
 
 
 cardImage : String -> Element msg
 cardImage url =
     image
-        [ width (fill |> maximum 200)
+        [ -- width (fill |> maximum 100)
+          -- height (fill |> maximum 10)
+          cardImgMaxWidth
+        , Border.width 2
+        , alignLeft
         ]
         { src = url, description = "Some image" }
 
@@ -434,22 +449,6 @@ paginateButton paginateAction =
         { onPress = Just (UsePaginate paginateRecord.action), label = text paginateRecord.text }
 
 
-buttonSearch : Element Msg
-buttonSearch =
-    Input.button
-        [ mouseOver
-            [ Background.color hoverBlue
-            ]
-        , Font.size 16
-        , padding 10
-        , Border.width 2
-        , Background.color white
-        , Element.focused
-            [ Background.color focusedBlue ]
-        ]
-        { onPress = Just SendHttpRequest, label = text "Search" }
-
-
 buttonSeeMore : Element msg
 buttonSeeMore =
     Input.button
@@ -466,28 +465,19 @@ buttonSeeMore =
         { onPress = Nothing, label = text "See More" }
 
 
-white =
-    Element.rgb255 255 255 255
 
-
-red =
-    Element.rgb255 255 0 0
-
-
-deleteRed =
-    Element.rgb255 223 71 89
-
-
-focusedBlue =
-    Element.rgb255 69 179 231
-
-
-hoverBlue =
-    Element.rgb255 205 235 249
-
-
-dangerRed =
-    Element.rgb255 223 71 89
+-- white =
+--     Element.rgb255 255 255 255
+-- red =
+--     Element.rgb255 255 0 0
+-- deleteRed =
+--     Element.rgb255 223 71 89
+-- focusedBlue =
+--     Element.rgb255 69 179 231
+-- hoverBlue =
+--     Element.rgb255 205 235 249
+-- dangerRed =
+--     Element.rgb255 223 71 89
 
 
 buttonDelete : Element msg

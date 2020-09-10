@@ -3,10 +3,10 @@ module Main exposing (main)
 import Api
 import Browser
 import Browser.Navigation as Nav
+import Element exposing (Element)
 import Html exposing (Html, div, h1, img, text)
-import Html.Attributes exposing (src)
 import Json.Decode as Decode exposing (Value)
-import Page
+import Page exposing (Page)
 import Page.Home as Home
 import Page.Login as Login
 import Route exposing (Route)
@@ -14,12 +14,6 @@ import Session exposing (Session)
 import Tuple
 import Url exposing (Url)
 import Viewer exposing (Viewer)
-import Element 
-
-
-
----- MODEL ----
--- Should separate by pages
 
 
 type Model
@@ -27,21 +21,6 @@ type Model
     | Login Login.Model
     | Redirect Session
     | NotFound Session
-
-
-
--- { key : Nav.Key
--- , url : Url.Url
--- , page : PageModel
--- }
--- type PageModel
---     = Home Home.Model
--- | CardModel Card.Model
--- { buttonModel : Button.Model }
--- init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
--- init flags url key =
---     ( Home (Tuple.first Home.init), Cmd.map HomeMsg (Tuple.second Home.init) )
--- init flags url key
 
 
 init : Maybe Viewer -> Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -83,10 +62,6 @@ changeRouteTo maybeRoute model =
                 |> updateWith Login LoginMsg model
 
 
-
----- UPDATE ----
-
-
 type Msg
     = HomeMsg Home.Msg
     | LoginMsg Login.Msg
@@ -113,14 +88,6 @@ update msg model =
                 Browser.Internal url ->
                     case url.fragment of
                         Nothing ->
-                            -- If we got a link that didn't include a fragment,
-                            -- it's from one of those (href "") attributes that
-                            -- we have to include to make the RealWorld CSS work.
-                            --
-                            -- In an application doing path routing instead of
-                            -- fragment-based routing, this entire
-                            -- `case url.fragment of` expression this comment
-                            -- is inside would be unnecessary.
                             ( model, Cmd.none )
 
                         Just _ ->
@@ -144,16 +111,6 @@ update msg model =
             ( model, Cmd.none )
 
 
-
--- don't exactly like this but its for msges from the wrong page
--- Just Route.Register ->
---     Register.init session
---         |> updateWith Register GotRegisterMsg model
--- Just (Route.Profile username) ->
---     Profile.init session username
---         |> updateWith (Profile username) GotProfileMsg model
-
-
 toSession : Model -> Session
 toSession page =
     case page of
@@ -168,31 +125,6 @@ toSession page =
 
         Redirect session ->
             session
-
-
-
--- Redirect session ->
---     session
--- NotFound session ->
---     session
--- Settings settings ->
---     Settings.toSession settings
--- Register register ->
---     Register.toSession register
--- Profile _ profile ->
---     Profile.toSession profile
--- Article article ->
---     Article.toSession article
--- Editor _ editor ->
---     Editor.toSession editor
--- case urlRequest of
---     Browser.Internal url -> (model, Nav.pushUrl model.key (Url.toString url))
---     Browser.External url -> (model, Nav.pushUrl model.key (Url.toString url))
--- updateWith2 : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
--- updateWith2 toModel toMsg model ( subModel, subCmd ) =
---     ( toModel subModel
---     , Cmd.map toMsg subCmd
---     )
 
 
 updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
@@ -218,84 +150,30 @@ modelToSession page =
             session
 
 
-
--- type alias Document msg =
---     { title : String
---     , body : List (Html msg)
---     }
-
-
-viewNew : Model -> Browser.Document Msg
-viewNew model =
-    let
-        viewer =
-            Session.viewer <| modelToSession model
-
-        viewPage page toMsg pageView =
-            { title = Page.pageToString page
-            , body =
-                (Page.viewNew viewer page)
-                    |> Element.layout [] 
-                    |> List.singleton
-            }
-    in case model of
-        Home submodel ->
-            viewPage Page.Home HomeMsg (Home.view submodel)
-        Login submodel ->
-            viewPage Page.Login LoginMsg (Login.view submodel)
-        Redirect _ ->
-            { title = "Redirect"
-            , body =
-                [ Html.text "redirecting" ]
-            }
-
-        NotFound _ ->
-            { title = "NotFound"
-            , body =
-                [ Html.text "notfounding" ]
-            }
-
-
 view : Model -> Browser.Document Msg
 view model =
     let
+        viewer : Maybe Viewer
         viewer =
-            Session.viewer (toSession model)
+            Session.viewer <| modelToSession model
 
-        viewPage page toMsg config =
-            let
-                { title, body } =
-                    Page.view viewer page config
-            in
-            { title = title
-            , body = List.map (Html.map toMsg) body
+        -- viewPage : Page-> (subMsg -> Msg) -> Element Msg -> Browser.Document Msg
+        viewPage page toMsg contentView =
+            { title = Page.pageToString page
+            , body =
+                (Page.view viewer page contentView)
+                    |> Element.map toMsg
+                    |> Element.layout []
+                    |> List.singleton
             }
     in
-    case model of
+    case Debug.log "what" model of
         Home submodel ->
-            viewPage Page.Home
-                HomeMsg
-                { title = "Home"
-                , content = Home.view submodel
-                }
+            viewPage Page.Home HomeMsg (Element.html (Home.view submodel))
 
         Login submodel ->
-            viewPage Page.Login
-                LoginMsg
-                { title = "Login"
-                , content = Login.view submodel
-                }
+            viewPage Page.Login LoginMsg (Element.html (Login.view submodel))
 
-        -- Login submodel ->
-        --     { title = "Login"
-        --     , body =
-        --         [ Html.map LoginMsg (Login.view submodel) ]
-        --     }
-        -- Home submodel ->
-        --     { title = "Home"
-        --     , body =
-        --         [ Html.map HomeMsg (Home.view submodel) ]
-        --     }
         Redirect _ ->
             { title = "Redirect"
             , body =
@@ -307,20 +185,6 @@ view model =
             , body =
                 [ Html.text "notfounding" ]
             }
-
-
-
--- view : (subMsg-> Msg )->Model -> Html Msg
--- view toMsg model =
---     case model of
---         Home submodel ->  Html.map toMsg (Home.view submodel)
--- case model of
---             Button _ -> Button.view model
--- div []
---     [ img [ src "/logo.svg" ] []
---     , h1 [] [ text "Your Elm App is working!" ]
---     ]
--- ---- PROGRAM ----
 
 
 subscriptions : Model -> Sub Msg
@@ -343,19 +207,6 @@ subscriptions model =
             Sub.map LoginMsg (Login.subscriptions loginModel)
 
 
-
--- main : Program () Model Msg
--- main =
---     Browser.application
---         { init = init
---         , view = view
---         , update = update
---         , subscriptions = subscriptions
---         , onUrlRequest = LinkClicked
---         , onUrlChange = UrlChanged
---         }
-
-
 main : Program Value Model Msg
 main =
     Api.application Viewer.decoder
@@ -366,15 +217,3 @@ main =
         , update = update
         , view = view
         }
-
-
-
--- , onUrlRequest=
--- , onUrlChange =
--- ,subscriptions =
--- Browser.element
---     { view = view
---     , init = \_ -> init
---     , update = update
---     , subscriptions = always Sub.none
---     }
