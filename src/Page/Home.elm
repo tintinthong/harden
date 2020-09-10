@@ -4,6 +4,7 @@ import Data.Color exposing (dangerRed, deleteRed, focusedBlue, hoverBlue, red, w
 import Data.Font exposing (paragraphAttrs, titleAttrs)
 import Data.Misc exposing (loremipsum)
 import Data.Size exposing (..)
+import Dict exposing (Dict)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -30,8 +31,9 @@ type alias Model =
     , request : Request
     , errorMessage : Maybe String
     , paginatedList : Paginate.PaginatedList Card
-    , checkedFilter : ShowType
     , something : Bool
+    , seriesChecked : Bool
+    , movieChecked : Bool
     }
 
 
@@ -59,7 +61,7 @@ type Msg
     | GotCards (Result Http.Error (List Card))
     | SearchChanged String
     | UsePaginate PaginateAction
-    | Whatever
+    | FilterChanged ShowType
 
 
 movieDecoder : Decoder Card
@@ -110,8 +112,9 @@ init session =
       , request = Loading
       , errorMessage = Nothing
       , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
-      , checkedFilter = Series
       , something = True
+      , seriesChecked = True
+      , movieChecked = True
       }
     , getMovies "Sleep"
     )
@@ -129,15 +132,20 @@ paginateSize =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case Debug.log "msg" msg of
+    case Debug.log "Home:update" msg of
         SendHttpRequest ->
             ( { model | request = Loading }, getMovies model.searchString )
 
         SearchChanged a ->
             ( { model | searchString = a }, Cmd.none )
 
-        Whatever ->
-            ( model, Cmd.none )
+        FilterChanged filter ->
+            case filter of
+                Series ->
+                    ( { model | seriesChecked = not model.seriesChecked }, Cmd.none )
+
+                Movie ->
+                    ( { model | movieChecked = not model.seriesChecked }, Cmd.none )
 
         GotCards result ->
             case result of
@@ -240,9 +248,9 @@ searchbar model =
                     (Input.text
                         []
                         { label = Input.labelAbove [] (Element.el [] (text <| "Enter a show"))
-                        , onChange = SearchChanged 
-                        , text = model.searchString 
-                        , placeholder =Just <| Input.placeholder [] <| text "Type your message" 
+                        , onChange = SearchChanged
+                        , text = model.searchString
+                        , placeholder = Just <| Input.placeholder [] <| text "Type your message"
                         }
                     )
                 , Element.el [ Border.width 2, alignBottom ] buttonSearch
@@ -250,35 +258,25 @@ searchbar model =
     in
     Element.column [ centerX, Border.width 2 ]
         [ centerCol
-
-        -- , Input.radio []
-        --     { onChange = \x -> SendHttpRequest
-        --     , selected = Nothing
-        --     , label = Input.labelRight [] (text "Choose your filter")
-        --     , options =
-        --         [ Input.option Series (text "Series")
-        --         , Input.option Series (text "Movie")
-        --         ]
-        --     }
-        -- , Element.row
-        --     []
-        --     [ Input.checkbox []
-        --         { onChange = \x -> SendHttpRequest
-        --         , icon = Input.defaultCheckbox
-        --         , checked = something
-        --         , label =
-        --             Input.labelRight []
-        --                 (text "Series")
-        --         }
-        --     , Input.checkbox []
-        --         { onChange = \x -> SendHttpRequest
-        --         , icon = Input.defaultCheckbox
-        --         , checked = something
-        --         , label =
-        --             Input.labelRight []
-        --                 (text "Movie")
-        --         }
-        --     ]
+        , Element.row
+            []
+            [ Input.checkbox []
+                { onChange = \bool -> FilterChanged Series
+                , icon = Input.defaultCheckbox
+                , checked = model.seriesChecked
+                , label =
+                    Input.labelRight []
+                        (text "Series")
+                }
+            , Input.checkbox []
+                { onChange = \bool -> FilterChanged Movie
+                , icon = Input.defaultCheckbox
+                , checked = model.movieChecked
+                , label =
+                    Input.labelRight []
+                        (text "Movie")
+                }
+            ]
         ]
 
 
@@ -526,7 +524,7 @@ buttonDelete =
 
 view : Model -> Html Msg
 view model =
-    case Debug.log "Home:view" model.request of
+    case model.request of
         Loading ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]

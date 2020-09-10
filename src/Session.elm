@@ -26,7 +26,7 @@ type Session
 
 viewer : Session -> Maybe Viewer
 viewer session =
-    case Debug.log "Session:viewer" session of
+    case  session of
         LoggedIn _ val ->
             Just val
 

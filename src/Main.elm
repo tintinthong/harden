@@ -167,7 +167,7 @@ view model =
                     |> List.singleton
             }
     in
-    case Debug.log "what" model of
+    case  model of
         Home submodel ->
             viewPage Page.Home HomeMsg (Element.html (Home.view submodel))
 
