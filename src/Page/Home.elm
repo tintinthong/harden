@@ -2,6 +2,7 @@ module Page.Home exposing (..)
 
 import Data.Color exposing (dangerRed, deleteRed, focusedBlue, hoverBlue, red, white)
 import Data.Font exposing (paragraphAttrs, titleAttrs)
+import Data.Misc exposing (loremipsum)
 import Data.Size exposing (..)
 import Element exposing (..)
 import Element.Background as Background
@@ -29,7 +30,23 @@ type alias Model =
     , request : Request
     , errorMessage : Maybe String
     , paginatedList : Paginate.PaginatedList Card
+    , checkedFilter : ShowType
+    , something : Bool
     }
+
+
+type ShowType
+    = Movie
+    | Series
+
+
+filterShowType : String -> Paginate.PaginatedList Card -> Paginate.PaginatedList Card
+filterShowType showtype shows =
+    let
+        isShowType card =
+            card.showType == showtype
+    in
+    Paginate.map (List.filter isShowType) shows
 
 
 toSession : Model -> Session
@@ -42,24 +59,15 @@ type Msg
     | GotCards (Result Http.Error (List Card))
     | SearchChanged String
     | UsePaginate PaginateAction
+    | Whatever
 
 
 movieDecoder : Decoder Card
 movieDecoder =
     map3 Card
         (at [ "Title" ] string)
-        --title
         (at [ "Type" ] string)
-        --subtitle
         (at [ "Poster" ] string)
-
-
-
--- type alias Search =
---     { title : String
---     , description : String
---     , imageUrl : String
---     }
 
 
 moviesDecoder : Decoder (List Card)
@@ -68,7 +76,7 @@ moviesDecoder =
 
 
 type alias Card =
-    { title : String, subtitle : String, imageUrl : String }
+    { title : String, showType : String, imageUrl : String }
 
 
 
@@ -98,12 +106,14 @@ init session =
             Debug.log "Session" session
     in
     ( { session = session
-      , searchString = ""
+      , searchString = "Sleep"
       , request = Loading
       , errorMessage = Nothing
       , paginatedList = Paginate.fromList 10 [] --initialise with empty cards
+      , checkedFilter = Series
+      , something = True
       }
-    , getMovies "Rick"
+    , getMovies "Sleep"
     )
 
 
@@ -125,6 +135,9 @@ update msg model =
 
         SearchChanged a ->
             ( { model | searchString = a }, Cmd.none )
+
+        Whatever ->
+            ( model, Cmd.none )
 
         GotCards result ->
             case result of
@@ -206,12 +219,11 @@ logo =
         none
 
 
-searchbar : Element Msg
-searchbar =
+searchbar : Model -> Element Msg
+searchbar model =
     let
         rowAttrs =
-            [ Border.width 2
-            , padding 10
+            [ padding 10
             , width fill
             , spacing 10
             ]
@@ -222,24 +234,52 @@ searchbar =
             , Font.center
             ]
 
-        handler newSearchString =
-            SearchChanged newSearchString
-
         centerCol =
-            Element.row [ centerX, spacing 10 , Border.width 2]
-                [ Element.el [centerX]
-                    (Input.text [
-                         ]
+            Element.row [ centerX, spacing 10 ]
+                [ Element.el [ centerX ]
+                    (Input.text
+                        []
                         { label = Input.labelAbove [] (Element.el [] (text <| "Enter a show"))
-                        , onChange = handler
-                        , text = "Rick"
-                        , placeholder = Nothing
+                        , onChange = SearchChanged 
+                        , text = model.searchString 
+                        , placeholder =Just <| Input.placeholder [] <| text "Type your message" 
                         }
                     )
                 , Element.el [ Border.width 2, alignBottom ] buttonSearch
                 ]
     in
-    centerCol
+    Element.column [ centerX, Border.width 2 ]
+        [ centerCol
+
+        -- , Input.radio []
+        --     { onChange = \x -> SendHttpRequest
+        --     , selected = Nothing
+        --     , label = Input.labelRight [] (text "Choose your filter")
+        --     , options =
+        --         [ Input.option Series (text "Series")
+        --         , Input.option Series (text "Movie")
+        --         ]
+        --     }
+        -- , Element.row
+        --     []
+        --     [ Input.checkbox []
+        --         { onChange = \x -> SendHttpRequest
+        --         , icon = Input.defaultCheckbox
+        --         , checked = something
+        --         , label =
+        --             Input.labelRight []
+        --                 (text "Series")
+        --         }
+        --     , Input.checkbox []
+        --         { onChange = \x -> SendHttpRequest
+        --         , icon = Input.defaultCheckbox
+        --         , checked = something
+        --         , label =
+        --             Input.labelRight []
+        --                 (text "Movie")
+        --         }
+        --     ]
+        ]
 
 
 buttonSearch : Element Msg
@@ -336,29 +376,33 @@ grid model =
 cardView : Card -> Element msg
 cardView cardData =
     Element.column
-        [ -- width (fill |> maximum 300)
-          -- maxSizeOfCard
-              spacing 10
-        ,someHeight
+        [ -- maxSizeOfCard
+          spacing 10
+        , someHeight
         , someWidth
         , Background.color (rgb255 255 255 255)
         , Font.color (rgb255 0 0 0)
         , Border.color (rgb255 0 0 0)
         , Border.width 2
         ]
-        [ cardHeader { title = cardData.title, subtitle = cardData.subtitle }
-        , Element.textColumn
-            [ Border.width 2
-            , width fill
-                , height <| fillPortion 8
+        [ cardHeader { title = cardData.title, showType = cardData.showType }
+        , Element.column
+            [ centerX
+            , height <| fillPortion 8
             ]
-            [ cardImage cardData.imageUrl
-            , cardDescription loremipsum
+            [ Element.textColumn
+                [ Border.width 2
+                , width fill
+                , padding 10
+                ]
+                [ cardImage cardData.imageUrl
+                , cardDescription loremipsum
+                ]
             ]
 
         -- Row of buttons
         , Element.row
-            [ alignRight, alignBottom ,height <| fillPortion 3 ]
+            [ alignRight, alignBottom, height <| fillPortion 1 ]
             [ buttonSeeMore
 
             -- , buttonDelete
@@ -371,18 +415,20 @@ cutText maxChar textToCut =
     String.left maxChar textToCut ++ ".."
 
 
-cardHeader : { title : String, subtitle : String } -> Element msg
+cardHeader : { title : String, showType : String } -> Element msg
 cardHeader titleObj =
     Element.column
-        [ centerX, Border.width 2 , cardTitleHeight, height <| fillPortion 2]
+        [ centerX, height <| fillPortion 2 ]
         [ Element.paragraph
-            (titleAttrs ++ [ cardTitleMaxWidth])
+            (titleAttrs ++ [ cardTitleMaxWidth, cardTitleHeight, Border.width 2 ])
             [ Element.text <| titleObj.title ]
         , Element.el
             [ Font.size 15
             , Font.extraLight
+            , Border.width 2
+            , alignLeft
             ]
-            (Element.text <| String.right 100 <| titleObj.subtitle)
+            (Element.text <| String.right 100 <| titleObj.showType)
         ]
 
 
@@ -394,9 +440,7 @@ cardDescription textContent =
     in
     Element.paragraph
         (paragraphAttrs
-            ++ [ Border.width 2
-               , padding 10
-               , cardDescriptionMaxWidth
+            ++ [ cardDescriptionMaxWidth
                ]
         )
         [ Element.text <| parsedText ]
@@ -405,10 +449,8 @@ cardDescription textContent =
 cardImage : String -> Element msg
 cardImage url =
     image
-        [ -- width (fill |> maximum 100)
-          -- height (fill |> maximum 10)
-          cardImgMaxWidth
-        , Border.width 2
+        [ padding 5
+        , cardImgMaxWidth
         , alignLeft
         ]
         { src = url, description = "Some image" }
@@ -465,21 +507,6 @@ buttonSeeMore =
         { onPress = Nothing, label = text "See More" }
 
 
-
--- white =
---     Element.rgb255 255 255 255
--- red =
---     Element.rgb255 255 0 0
--- deleteRed =
---     Element.rgb255 223 71 89
--- focusedBlue =
---     Element.rgb255 69 179 231
--- hoverBlue =
---     Element.rgb255 205 235 249
--- dangerRed =
---     Element.rgb255 223 71 89
-
-
 buttonDelete : Element msg
 buttonDelete =
     Input.button
@@ -497,17 +524,13 @@ buttonDelete =
         { onPress = Nothing, label = text "Delete" }
 
 
-loremipsum =
-    "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged."
-
-
 view : Model -> Html Msg
 view model =
     case Debug.log "Home:view" model.request of
         Loading ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ searchbar
+                    [ searchbar model
 
                     -- , grid model
                     ]
@@ -515,16 +538,13 @@ view model =
         Default ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ searchbar
-
-                    -- , searchbar
-                    -- , grid model
+                    [ searchbar model
                     ]
 
         Failure ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ searchbar
+                    [ searchbar model
 
                     -- , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
@@ -533,6 +553,6 @@ view model =
         Success cards ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
-                    [ searchbar
+                    [ searchbar model
                     , grid model
                     ]
