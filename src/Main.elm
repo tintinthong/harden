@@ -9,6 +9,7 @@ import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
 import Page.Home as Home
 import Page.Login as Login
+import Page.Register as Register
 import Route exposing (Route)
 import Session exposing (Session)
 import Tuple
@@ -19,6 +20,7 @@ import Viewer exposing (Viewer)
 type Model
     = Home Home.Model
     | Login Login.Model
+    | Register Register.Model
     | Redirect Session
     | NotFound Session
 
@@ -50,6 +52,9 @@ changeRouteTo maybeRoute model =
     case Debug.log "changeRouteZTo: maybeRoute" maybeRoute of
         -- Just Route.Logout ->
         --     ( model, Api.logout )
+        Just Route.Register ->
+            Register.init session
+                |> updateWith Register RegisterMsg model
         Nothing ->
             ( NotFound session, Cmd.none )
 
@@ -65,6 +70,7 @@ changeRouteTo maybeRoute model =
 type Msg
     = HomeMsg Home.Msg
     | LoginMsg Login.Msg
+    | RegisterMsg Register.Msg
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
     | GotSession Session
@@ -120,6 +126,9 @@ toSession page =
         Login login ->
             Login.toSession login
 
+        Register register ->
+            Register.toSession register
+
         NotFound session ->
             session
 
@@ -142,6 +151,8 @@ modelToSession page =
 
         Login login ->
             Login.toSession login
+        Register register ->
+            Register.toSession register
 
         NotFound session ->
             session
@@ -174,6 +185,8 @@ view model =
         Login submodel ->
             viewPage Page.Login LoginMsg (Element.html (Login.view submodel))
 
+        Register submodel ->
+            viewPage Page.Register RegisterMsg (Element.html (Register.view submodel))
         Redirect _ ->
             { title = "Redirect"
             , body =
@@ -206,6 +219,8 @@ subscriptions model =
         Login loginModel ->
             Sub.map LoginMsg (Login.subscriptions loginModel)
 
+        Register registerModel ->
+            Sub.map RegisterMsg (Register.subscriptions registerModel)
 
 main : Program Value Model Msg
 main =

@@ -16,6 +16,7 @@ import Username exposing (Username)
 type Route
     = Home
     | Login
+    | Register
 
 
 
@@ -82,6 +83,9 @@ routeToPieces page =
 
         Login ->
             [ "login" ]
+
+        Register ->
+            [ "register" ]
 
 
 

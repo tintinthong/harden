@@ -20,6 +20,7 @@ import Viewer exposing (Viewer)
 type Page
     = Home
     | Login
+    | Register
 
 
 
@@ -35,6 +36,9 @@ pageToString page =
         Login ->
             "Login"
 
+        Register ->
+            "Register"
+
 
 pageToRoute : Page -> Route
 pageToRoute page =
@@ -44,6 +48,9 @@ pageToRoute page =
 
         Login ->
             Route.Login
+
+        Register ->
+            Route.Register
 
 
 isActive : Page -> Route -> Bool
@@ -55,6 +62,8 @@ isActive page route =
         ( Login, Route.Login ) ->
             True
 
+        ( Login, Route.Register ) ->
+            True
         -- ( Register, Route.Register ) ->
         --     True
         -- ( Settings, Route.Settings ) ->
