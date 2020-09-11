@@ -34,12 +34,14 @@ type alias Model =
     , something : Bool
     , seriesChecked : Bool
     , movieChecked : Bool
+    , gameChecked : Bool
     }
 
 
 type ShowType
     = Movie
     | Series
+    | Game
 
 
 showTypeToString : ShowType -> String
@@ -50,6 +52,9 @@ showTypeToString showtype =
 
         Series ->
             "series"
+
+        Game ->
+            "game"
 
 
 filterShowType : List ShowType -> Paginate.PaginatedList Card -> Paginate.PaginatedList Card
@@ -98,6 +103,9 @@ showTypeDecoder =
 
                     "movie" ->
                         Json.Decode.succeed <| Movie
+
+                    "game" ->
+                        Json.Decode.succeed <| Game
 
                     somethingElse ->
                         Json.Decode.fail <| "Unknown Showtype" ++ somethingElse
@@ -164,6 +172,7 @@ init session =
       , something = True
       , seriesChecked = True
       , movieChecked = True
+      , gameChecked = True
       }
     , getMovies "Rick"
     )
@@ -176,7 +185,7 @@ subscriptions model =
 
 paginateSize : Int
 paginateSize =
-    10
+   10 
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -195,6 +204,9 @@ update msg model =
 
                 Movie ->
                     ( { model | movieChecked = not model.movieChecked }, Cmd.none )
+
+                Game ->
+                    ( { model | gameChecked = not model.gameChecked }, Cmd.none )
 
         GotCards result ->
             case result of
@@ -325,6 +337,14 @@ searchbar model =
                     Input.labelRight []
                         (text "Movie")
                 }
+            , Input.checkbox []
+                { onChange = \bool -> FilterChanged Game
+                , icon = Input.defaultCheckbox
+                , checked = model.gameChecked
+                , label =
+                    Input.labelRight []
+                        (text "Game")
+                }
             ]
         ]
 
@@ -355,7 +375,7 @@ grid model =
     let
         colAttrs =
             [ padding 10
-            , width fill
+                  , width fill
             ]
 
         rowAttrs =
@@ -392,6 +412,12 @@ grid model =
                     )
                         ++ (if model.movieChecked then
                                 [ Movie ]
+
+                            else
+                                []
+                           )
+                        ++ (if model.gameChecked then
+                                [ Game ]
 
                             else
                                 []
@@ -576,7 +602,6 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ searchbar model
-
                     -- , grid model
                     ]
 
@@ -584,13 +609,13 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ searchbar model
+                    -- , grid model
                     ]
 
         Failure ->
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ searchbar model
-
                     -- , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
                     ]
