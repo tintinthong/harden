@@ -77,17 +77,6 @@ isActive page route =
             False
 
 
-makeLink : Page -> Element msg
-makeLink page =
-    Element.el
-        [ padding 5
-        , width fill
-        , alignLeft
-        , Font.center
-        ]
-        (Element.link [] { label = Element.text <| pageToString page, url = Route.routeToString <| pageToRoute page })
-
-
 
 -- View
 
@@ -134,24 +123,62 @@ header =
     Element.column [] [ Element.text "" ]
 
 
+makeLink : Page -> Element msg
+makeLink page =
+    Element.el
+        [ padding 5
+        , width fill
+        , alignLeft
+        , Font.center
+        ]
+        (Element.link [] { label = Element.text <| pageToString page, url = Route.routeToString <| pageToRoute page })
+
+
 menu : Maybe Viewer -> List Page -> Element msg
 menu maybeViewer pages =
     let
+        pagesIfLoggedIn =
+            [ Home, Login ]
+
+        pagesIfNotLoggedIn =
+            [ Home, Login, Register ]
+
         makeColumn colAttrs link =
             column colAttrs [ link ]
 
-        pageButtons =
+        pageLinks =
             pages
                 |> List.map makeLink
-                |> List.map (makeColumn [])
+                |> List.map (makeColumn [alignLeft])
     in
-    row
-        [ Border.width 2
-        , padding 10
-        , width fill
-        , spacing 10
-        ]
-        pageButtons
+    case maybeViewer of
+        Just viewer ->
+            let
+                username =
+                    Viewer.username viewer
+
+                welcomeMessage =
+                    "Hi," ++ Username.toString username 
+
+                welcomeSection =
+                    column [alignRight] [ Element.text <| welcomeMessage ]
+            in
+            row
+                [ Border.width 2
+                , padding 10
+                , width fill
+                , spacing 10
+                ]
+                (pageLinks ++ [welcomeSection])
+
+        Nothing ->
+            row
+                [ Border.width 2
+                , padding 10
+                , width fill
+                , spacing 10
+                ]
+                (pageLinks )
 
 
 footer : List Page -> Element msg

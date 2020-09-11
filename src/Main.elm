@@ -117,7 +117,7 @@ update msg model =
             in
             ( Redirect session, Route.replaceUrl (Session.navKey session) Route.Home )
 
-        ( _, _ ) ->
+        ( _, _ ) -> -- this may just be a mistake compiler doesn't tell you anything 
             ( model, Cmd.none )
 
 
