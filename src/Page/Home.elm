@@ -52,13 +52,13 @@ showTypeToString showtype =
             "series"
 
 
-filterShowType : Maybe ShowType -> Paginate.PaginatedList Card -> Paginate.PaginatedList Card
-filterShowType showtype shows =
+filterShowType : List ShowType -> Paginate.PaginatedList Card -> Paginate.PaginatedList Card
+filterShowType showtypes shows =
     let
-        isShowType card =
-            card.showType == showtype
+        isMemberShowType card =
+            List.member card.showType showtypes
     in
-    Paginate.map (List.filter isShowType) shows
+    Paginate.map (List.filter isMemberShowType) shows
 
 
 toSession : Model -> Session
@@ -87,17 +87,17 @@ moviesDecoder =
     field "Search" <| list movieDecoder
 
 
-showTypeDecoder : Decoder (Maybe ShowType)
+showTypeDecoder : Decoder ShowType
 showTypeDecoder =
     Json.Decode.string
         |> Json.Decode.andThen
             (\str ->
                 case str of
                     "series" ->
-                        Json.Decode.succeed <| Just Series
+                        Json.Decode.succeed <| Series
 
                     "movie" ->
-                        Json.Decode.succeed <| Just Movie
+                        Json.Decode.succeed <| Movie
 
                     somethingElse ->
                         Json.Decode.fail <| "Unknown Showtype" ++ somethingElse
@@ -127,7 +127,7 @@ stringToShowType showtypeString =
 
 
 type alias Card =
-    { title : String, showType : Maybe ShowType, imageUrl : String }
+    { title : String, showType : ShowType, imageUrl : String }
 
 
 
@@ -194,7 +194,7 @@ update msg model =
                     ( { model | seriesChecked = not model.seriesChecked }, Cmd.none )
 
                 Movie ->
-                    ( { model | movieChecked = not model.seriesChecked }, Cmd.none )
+                    ( { model | movieChecked = not model.movieChecked }, Cmd.none )
 
         GotCards result ->
             case result of
@@ -355,6 +355,7 @@ grid model =
     let
         colAttrs =
             [ padding 10
+            , width fill
             ]
 
         rowAttrs =
@@ -381,13 +382,32 @@ grid model =
             Element.wrappedRow rowAttrs []
 
         Success cards ->
+            let
+                listOfShowTypesToFilter =
+                    (if model.seriesChecked then
+                        [ Series ]
+
+                     else
+                        []
+                    )
+                        ++ (if model.movieChecked then
+                                [ Movie ]
+
+                            else
+                                []
+                           )
+                        ++ []
+
+                filteredCards =
+                    model.paginatedList |> filterShowType listOfShowTypesToFilter |> Paginate.page |> List.map (cardView >> makeCardCol)
+            in
             Element.column
-                []
+                colAttrs
                 [ Element.row [ alignRight ]
                     [ paginateButton Next
                     , paginateButton Prev
                     ]
-                , Element.wrappedRow rowAttrs (List.map (makeCardCol << cardView) <| Paginate.page model.paginatedList)
+                , Element.wrappedRow rowAttrs filteredCards --(List.map (makeCardCol << cardView) <| Paginate.page model.paginatedList)
                 ]
 
 
@@ -433,19 +453,14 @@ cutText maxChar textToCut =
     String.left maxChar textToCut ++ ".."
 
 
-cardHeader : { title : String, showType : Maybe ShowType } -> Element msg
+cardHeader : { title : String, showType : ShowType } -> Element msg
 cardHeader { title, showType } =
     let
         _ =
             Debug.log "showType" showType
 
         showTypeString =
-            case showType of
-                Just x ->
-                    showTypeToString x
-
-                Nothing ->
-                    "No Type Found"
+            showTypeToString showType
     in
     Element.column
         [ centerX, height <| fillPortion 2 ]
@@ -479,9 +494,9 @@ cardDescription textContent =
 cardImage : String -> Element msg
 cardImage url =
     image
-        [ padding 5
-        , cardImgMaxWidth
+        [ cardImgMaxWidth
         , alignLeft
+        , Border.width 2
         ]
         { src = url, description = "Some image" }
 
