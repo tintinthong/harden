@@ -46,11 +46,11 @@ type Problem
 
 
 type Msg
-    = -- SubmittedForm
-      EnteredEmail String
+    = EnteredEmail String
     | EnteredPassword String
-      -- | CompletedLogin (Result Http.Error Viewer)
+    | CompletedLogin (Result Http.Error Viewer)
     | GotSession Session
+    | SubmittedForm
 
 
 type TrimmedForm
@@ -111,7 +111,7 @@ button =
         , Element.focused
             [ Background.color purple ]
         ]
-        { onPress = Nothing 
+        { onPress = Nothing
         , label = text "Register"
         }
 
@@ -131,46 +131,50 @@ init session =
 
 update msg model =
     case Debug.log "Register:msg" msg of
-        -- SubmittedForm ->
-        --     case validate model.form of
-        --         Ok (Trimmed validForm) ->
-        --             let
-        --                 json =
-        --                     Encode.object [ ( "email", Encode.string validForm.email ), ( "password", Encode.string validForm.password ) ]
-        --                 _ =
-        --                     Debug.log "Register:json" json
-        --             in
-        --             ( { model | problems = [] }
-        --             , Http.post
-        --                 { url = "http://localhost:3001/rest/v1/login/"
-        --                 , body = Http.jsonBody json
-        --                 , expect = Http.expectJson CompletedLogin (Api.decoderFromCred Viewer.decoder)
-        --                 }
-        --             )
-        --         Err problems ->
-        --             ( { model | problems = problems }
-        --             , Cmd.none
-        --             )
+        SubmittedForm ->
+            case validate model.form of
+                Ok (Trimmed validForm) ->
+                    let
+                        json =
+                            Encode.object [ ( "email", Encode.string validForm.email ), ( "password", Encode.string validForm.password ) ]
+
+                        _ =
+                            Debug.log "Register:json" json
+                    in
+                    ( { model | problems = [] }
+                    , Http.post
+                        { url = "http://localhost:3001/rest/v1/login/"
+                        , body = Http.jsonBody json
+                        , expect = Http.expectJson CompletedLogin (Api.decoderFromCred Viewer.decoder)
+                        }
+                    )
+
+                Err problems ->
+                    ( { model | problems = problems }
+                    , Cmd.none
+                    )
+
         EnteredEmail email ->
             updateForm (\form -> { form | email = email }) model
 
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
 
-        -- CompletedLogin (Err error) ->
-        --     let
-        --         serverErrors =
-        --             Api.decodeErrors error
-        --                 |> List.map ServerError
-        --     in
-        --     ( { model | problems = List.append model.problems serverErrors }
-        --     , Cmd.none
-        --     )
+        CompletedLogin (Err error) ->
+            let
+                serverErrors =
+                    Api.decodeErrors error
+                        |> List.map ServerError
+            in
+            ( { model | problems = List.append model.problems serverErrors }
+            , Cmd.none
+            )
 
-        -- CompletedLogin (Ok viewer) ->
-        --     ( model
-        --     , Viewer.store viewer
-        --     )
+        CompletedLogin (Ok viewer) ->
+            ( model
+            , Viewer.store viewer
+            )
+
         GotSession session ->
             let
                 _ =
@@ -225,7 +229,7 @@ view model =
 
                 -- , width fill
                 ]
-                { onPress = Nothing--Just SubmittedForm
+                { onPress = Nothing --Just SubmittedForm
                 , label = Element.text "Register"
                 }
             ]

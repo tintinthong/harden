@@ -55,6 +55,7 @@ changeRouteTo maybeRoute model =
         Just Route.Register ->
             Register.init session
                 |> updateWith Register RegisterMsg model
+
         Nothing ->
             ( NotFound session, Cmd.none )
 
@@ -78,13 +79,16 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    -- case Debug.log "msg, model" (msg,model) of
-    case ( msg, model ) of
+    case Debug.log "msg, model" (msg,model) of
+    -- case ( msg, model ) of
         ( HomeMsg submsg, Home submodel ) ->
             Home.update submsg submodel |> updateWith Home HomeMsg model
 
+        ( RegisterMsg submsg, Register submodel ) ->
+            (Register.update submsg submodel )|> updateWith Register RegisterMsg model
+
         ( LoginMsg submsg, Login submodel ) ->
-            Login.update submsg submodel |> updateWith Login LoginMsg model
+            (Login.update submsg submodel )|> updateWith Login LoginMsg model
 
         ( UrlChanged url, _ ) ->
             changeRouteTo (Route.fromUrl url) model
@@ -151,6 +155,7 @@ modelToSession page =
 
         Login login ->
             Login.toSession login
+
         Register register ->
             Register.toSession register
 
@@ -172,13 +177,13 @@ view model =
         viewPage page toMsg contentView =
             { title = Page.pageToString page
             , body =
-                (Page.view viewer page contentView)
+                Page.view viewer page contentView
                     |> Element.map toMsg
                     |> Element.layout []
                     |> List.singleton
             }
     in
-    case  model of
+    case model of
         Home submodel ->
             viewPage Page.Home HomeMsg (Element.html (Home.view submodel))
 
@@ -187,6 +192,7 @@ view model =
 
         Register submodel ->
             viewPage Page.Register RegisterMsg (Element.html (Register.view submodel))
+
         Redirect _ ->
             { title = "Redirect"
             , body =
@@ -221,6 +227,7 @@ subscriptions model =
 
         Register registerModel ->
             Sub.map RegisterMsg (Register.subscriptions registerModel)
+
 
 main : Program Value Model Msg
 main =
