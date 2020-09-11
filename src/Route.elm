@@ -20,17 +20,12 @@ type Route
 
 
 
--- | Logout
--- | Register
--- | Settings
--- | Profile Username
-
-
 parser : Parser (Route -> a) a
 parser =
     oneOf
         [ Parser.map Home Parser.top
         , Parser.map Login (s "login")
+        , Parser.map Register (s "register")
 
         -- , Parser.map Logout (s "logout")
         -- , Parser.map Settings (s "settings")

@@ -62,8 +62,9 @@ isActive page route =
         ( Login, Route.Login ) ->
             True
 
-        ( Login, Route.Register ) ->
+        ( Register, Route.Register ) ->
             True
+
         -- ( Register, Route.Register ) ->
         --     True
         -- ( Settings, Route.Settings ) ->
@@ -87,31 +88,50 @@ makeLink page =
         (Element.link [] { label = Element.text <| pageToString page, url = Route.routeToString <| pageToRoute page })
 
 
+
 -- View
 
 
 view : Maybe Viewer -> Page -> Element msg -> Element msg
 view maybeViewer page pageContent =
     let
-        defaultPages =
+        pagesIfLoggedIn =
             [ Home, Login ]
+
+        pagesIfNotLoggedIn =
+            [ Home, Login, Register ]
     in
-    Element.column [
-         height fill
-         ,width fill
-        ]
-        [ header
-        , menu maybeViewer defaultPages
-        , pageContent
-        , footer defaultPages
-        ]
+    case maybeViewer of
+        Just viewer ->
+            let
+                username =
+                    Viewer.username viewer
+            in
+            Element.column
+                [ height fill
+                , width fill
+                ]
+                [ header
+                , menu maybeViewer pagesIfLoggedIn
+                , pageContent
+                , footer pagesIfLoggedIn
+                ]
+
+        Nothing ->
+            Element.column
+                [ height fill
+                , width fill
+                ]
+                [ header
+                , menu maybeViewer pagesIfNotLoggedIn
+                , pageContent
+                , footer pagesIfNotLoggedIn
+                ]
 
 
 header : Element msg
 header =
     Element.column [] [ Element.text "" ]
-
-
 
 
 menu : Maybe Viewer -> List Page -> Element msg
@@ -143,7 +163,9 @@ footer pages =
         footerPageButtons =
             pages
                 |> List.map makeLink
-                |> List.map (makeColumn [centerX]) -- maybe put centerX here
+                |> List.map (makeColumn [ centerX ])
+
+        -- maybe put centerX here
     in
     row
         [ width fill
