@@ -32,12 +32,14 @@ toSession model =
 type alias Form =
     { email : String
     , password : String
+    , username : String
     }
 
 
 type ValidatedField
     = Email
     | Password
+    | Username
 
 
 type Problem
@@ -48,6 +50,7 @@ type Problem
 type Msg
     = EnteredEmail String
     | EnteredPassword String
+    | EnteredUsername String
     | CompletedLogin (Result Http.Error Viewer)
     | GotSession Session
     | SubmittedForm
@@ -75,6 +78,7 @@ fieldsToValidate : List ValidatedField
 fieldsToValidate =
     [ Email
     , Password
+    , Username
     ]
 
 
@@ -82,6 +86,13 @@ validateField : TrimmedForm -> ValidatedField -> List Problem
 validateField (Trimmed form) field =
     List.map (InvalidEntry field) <|
         case field of
+            Username ->
+                if String.isEmpty form.username then
+                    [ "username can't be blank." ]
+
+                else
+                    []
+
             Email ->
                 if String.isEmpty form.email then
                     [ "email can't be blank." ]
@@ -100,7 +111,8 @@ validateField (Trimmed form) field =
 trimFields : Form -> TrimmedForm
 trimFields form =
     Trimmed
-        { email = String.trim form.email
+        { username = String.trim form.username
+        , email = String.trim form.email
         , password = String.trim form.password
         }
 
@@ -120,7 +132,8 @@ init : Session -> ( Model, Cmd msg )
 init session =
     ( { session = session
       , form =
-            { email = ""
+            { username = ""
+            , email = ""
             , password = ""
             }
       , problems = []
@@ -157,6 +170,8 @@ update msg model =
         EnteredEmail email ->
             updateForm (\form -> { form | email = email }) model
 
+        EnteredUsername username ->
+            updateForm (\form -> { form | username = username }) model
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
 
@@ -206,12 +221,20 @@ view model =
                 , Font.size 24
                 ]
                 (text "Register")
-            , Input.username
+            , Input.email
                 [ spacing 12
                 ]
                 { text = model.form.email
                 , placeholder = Just (Input.placeholder [] (text "ricksanchez@gmail.com"))
                 , onChange = \newEmail -> EnteredEmail newEmail
+                , label = Input.labelAbove [ Font.size 14 ] (text "Email")
+                }
+            , Input.username
+                [ spacing 12
+                ]
+                { text = model.form.username
+                , placeholder = Just (Input.placeholder [] (text "The Ricktiest Rick"))
+                , onChange = \newUsername -> EnteredUsername newUsername
                 , label = Input.labelAbove [ Font.size 14 ] (text "Email")
                 }
             , Input.currentPassword [ spacing 12 ]
