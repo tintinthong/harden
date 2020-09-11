@@ -51,7 +51,7 @@ type Msg
     = EnteredEmail String
     | EnteredPassword String
     | EnteredUsername String
-    | CompletedLogin (Result Http.Error Viewer)
+    | CompletedRegistration (Result Http.Error Viewer)
     | GotSession Session
     | SubmittedForm
 
@@ -123,7 +123,7 @@ button =
         , Element.focused
             [ Background.color purple ]
         ]
-        { onPress = Nothing
+        { onPress = Just SubmittedForm
         , label = text "Register"
         }
 
@@ -149,16 +149,16 @@ update msg model =
                 Ok (Trimmed validForm) ->
                     let
                         json =
-                            Encode.object [ ( "email", Encode.string validForm.email ), ( "password", Encode.string validForm.password ) ]
+                            Encode.object [ ( "email", Encode.string validForm.email ), ( "password", Encode.string validForm.password ), ("username", Encode.string validForm.username) ]
 
                         _ =
                             Debug.log "Register:json" json
                     in
                     ( { model | problems = [] }
                     , Http.post
-                        { url = "http://localhost:3001/rest/v1/login/"
+                        { url = "http://localhost:3001/rest/v1/register/"
                         , body = Http.jsonBody json
-                        , expect = Http.expectJson CompletedLogin (Api.decoderFromCred Viewer.decoder)
+                        , expect = Http.expectJson CompletedRegistration (Api.decoderFromCred Viewer.decoder)
                         }
                     )
 
@@ -175,7 +175,7 @@ update msg model =
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
 
-        CompletedLogin (Err error) ->
+        CompletedRegistration (Err error) ->
             let
                 serverErrors =
                     Api.decodeErrors error
@@ -185,7 +185,7 @@ update msg model =
             , Cmd.none
             )
 
-        CompletedLogin (Ok viewer) ->
+        CompletedRegistration (Ok viewer) ->
             ( model
             , Viewer.store viewer
             )
@@ -252,7 +252,7 @@ view model =
 
                 -- , width fill
                 ]
-                { onPress = Nothing --Just SubmittedForm
+                { onPress = Just SubmittedForm
                 , label = Element.text "Register"
                 }
             ]
