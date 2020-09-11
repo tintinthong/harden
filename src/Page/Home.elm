@@ -81,15 +81,32 @@ movieDecoder =
         (at [ "Type" ] showTypeDecoder)
         (at [ "Poster" ] string)
 
+
 moviesDecoder : Decoder (List Card)
 moviesDecoder =
     field "Search" <| list movieDecoder
 
+
 showTypeDecoder : Decoder (Maybe ShowType)
 showTypeDecoder =
-   maybe (Json.Decode.map ( stringToShowType) (field "Type" string))
--- \showtypestring -> (Dict.get showtypestring dictStringToShowType)
+    Json.Decode.string
+        |> Json.Decode.andThen
+            (\str ->
+                case str of
+                    "series" ->
+                        Json.Decode.succeed <| Just Series
 
+                    "movie" ->
+                        Json.Decode.succeed <| Just Movie
+
+                    somethingElse ->
+                        Json.Decode.fail <| "Unknown Showtype" ++ somethingElse
+             --
+            )
+
+
+
+-- \showtypestring -> (Dict.get showtypestring dictStringToShowType)
 -- dictStringToShowType =
 --     Dict.fromList
 --         [ ( "movie", Movie )
@@ -99,11 +116,14 @@ showTypeDecoder =
 
 stringToShowType showtypeString =
     case showtypeString of
-        "movie"-> Movie
-        "series"-> Series
-        _ -> Series
+        "movie" ->
+            Movie
 
+        "series" ->
+            Series
 
+        _ ->
+            Series
 
 
 type alias Card =
@@ -371,7 +391,6 @@ grid model =
                 ]
 
 
-
 cardView : Card -> Element msg
 cardView cardData =
     Element.column
@@ -417,7 +436,9 @@ cutText maxChar textToCut =
 cardHeader : { title : String, showType : Maybe ShowType } -> Element msg
 cardHeader { title, showType } =
     let
-        _ = Debug.log "showType" showType
+        _ =
+            Debug.log "showType" showType
+
         showTypeString =
             case showType of
                 Just x ->
