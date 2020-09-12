@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Html exposing (Html, div, h1, img, text)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
+import Page.Content as Content
 import Page.Home as Home
 import Page.Login as Login
 import Page.Register as Register
@@ -15,12 +16,14 @@ import Session exposing (Session)
 import Tuple
 import Url exposing (Url)
 import Viewer exposing (Viewer)
+ -- import Http exposing (Https)
 
 
 type Model
     = Home Home.Model
     | Login Login.Model
     | Register Register.Model
+    | Content Content.Model
     | Redirect Session
     | NotFound Session
 
@@ -67,30 +70,45 @@ changeRouteTo maybeRoute model =
             Login.init session
                 |> updateWith Login LoginMsg model
 
+        Just Route.Content ->
+            Content.init session
+                |> updateWith Content ContentMsg model
+
 
 type Msg
     = HomeMsg Home.Msg
     | LoginMsg Login.Msg
     | RegisterMsg Register.Msg
+    | ContentMsg Content.Msg
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
     | GotSession Session
 
 
+-- contentUrl = { fragment = Just "/content", host = "localhost", path = "/", port_ = Just 3000, protocol = Http, query = Nothing }
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case Debug.log "msg, model" (msg,model) of
-    -- case ( msg, model ) of
+    case Debug.log "msg, model" ( msg, model ) of
+        -- case ( msg, model ) of
         ( HomeMsg submsg, Home submodel ) ->
-            Home.update submsg submodel |> updateWith Home HomeMsg model
+            -- let
+            --     pair =
+                    Home.update submsg submodel |> updateWith Home HomeMsg model
+            
+                -- _ ->
+                    -- pair
 
         ( RegisterMsg submsg, Register submodel ) ->
-            (Register.update submsg submodel )|> updateWith Register RegisterMsg model
+            Register.update submsg submodel |> updateWith Register RegisterMsg model
 
         ( LoginMsg submsg, Login submodel ) ->
-            (Login.update submsg submodel )|> updateWith Login LoginMsg model
+            Login.update submsg submodel |> updateWith Login LoginMsg model
 
         ( UrlChanged url, _ ) ->
+            let
+                _ = Debug.log "hi" url
+            in
             changeRouteTo (Route.fromUrl url) model
 
         ( LinkClicked urlRequest, _ ) ->
@@ -117,7 +135,8 @@ update msg model =
             in
             ( Redirect session, Route.replaceUrl (Session.navKey session) Route.Home )
 
-        ( _, _ ) -> -- this may just be a mistake compiler doesn't tell you anything 
+        ( _, _ ) ->
+            -- this may just be a mistake compiler doesn't tell you anything
             ( model, Cmd.none )
 
 
@@ -133,6 +152,9 @@ toSession page =
         Register register ->
             Register.toSession register
 
+        Content content ->
+            Content.toSession content
+
         NotFound session ->
             session
 
@@ -147,23 +169,9 @@ updateWith toModel toMsg model ( subModel, subCmd ) =
     )
 
 
-modelToSession : Model -> Session
-modelToSession page =
-    case page of
-        Home home ->
-            Home.toSession home
-
-        Login login ->
-            Login.toSession login
-
-        Register register ->
-            Register.toSession register
-
-        NotFound session ->
-            session
-
-        Redirect session ->
-            session
+triggerParentMsg : Cmd Msg -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+triggerParentMsg msg ( model, oldmsg ) =
+    ( model, Cmd.batch [ msg, oldmsg ] )
 
 
 view : Model -> Browser.Document Msg
@@ -171,7 +179,7 @@ view model =
     let
         viewer : Maybe Viewer
         viewer =
-            Session.viewer <| modelToSession model
+            Session.viewer <| toSession model
 
         -- viewPage : Page-> (subMsg -> Msg) -> Element Msg -> Browser.Document Msg
         viewPage page toMsg contentView =
@@ -192,6 +200,9 @@ view model =
 
         Register submodel ->
             viewPage Page.Register RegisterMsg (Element.html (Register.view submodel))
+
+        Content submodel ->
+            viewPage Page.Content ContentMsg (Element.html (Content.view submodel))
 
         Redirect _ ->
             { title = "Redirect"
@@ -227,6 +238,9 @@ subscriptions model =
 
         Register registerModel ->
             Sub.map RegisterMsg (Register.subscriptions registerModel)
+
+        Content contentModel ->
+            Sub.map ContentMsg (Content.subscriptions contentModel)
 
 
 main : Program Value Model Msg

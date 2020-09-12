@@ -17,6 +17,7 @@ type Route
     = Home
     | Login
     | Register
+    | Content
 
 
 
@@ -26,6 +27,7 @@ parser =
         [ Parser.map Home Parser.top
         , Parser.map Login (s "login")
         , Parser.map Register (s "register")
+        , Parser.map Content (s "content")
 
         -- , Parser.map Logout (s "logout")
         -- , Parser.map Settings (s "settings")
@@ -81,6 +83,9 @@ routeToPieces page =
 
         Register ->
             [ "register" ]
+
+        Content ->
+            [ "content" ]
 
 
 

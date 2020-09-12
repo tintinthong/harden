@@ -12,7 +12,8 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Http
-import Json.Decode exposing (Decoder, Error, andThen, at, bool, decodeString, field, float, list, map2, map3, maybe, string)
+import Json.Decode exposing (Decoder, Error, andThen, at, bool, decodeString, field, float, list, map2, map3, map4, maybe, string)
+import Page.Content as Content
 import Paginate
 import Session exposing (Session)
 import String
@@ -24,6 +25,14 @@ type Request
     | Failure
     | Default
 
+type Msg
+    = SendHttpRequest
+    | GotCards (Result Http.Error (List Card))
+    | SearchChanged String
+    | UsePaginate PaginateAction
+    | FilterChanged ShowType
+    | ClickedSeeMore String
+    | GotContent (Result Http.Error Content.Content)
 
 type alias Model =
     { session : Session
@@ -35,7 +44,12 @@ type alias Model =
     , seriesChecked : Bool
     , movieChecked : Bool
     , gameChecked : Bool
+    , content : Content.Content 
     }
+
+
+
+-- There may be more ids
 
 
 type ShowType
@@ -71,20 +85,15 @@ toSession model =
     model.session
 
 
-type Msg
-    = SendHttpRequest
-    | GotCards (Result Http.Error (List Card))
-    | SearchChanged String
-    | UsePaginate PaginateAction
-    | FilterChanged ShowType
 
 
 movieDecoder : Decoder Card
 movieDecoder =
-    map3 Card
+    map4 Card
         (at [ "Title" ] string)
         (at [ "Type" ] showTypeDecoder)
         (at [ "Poster" ] string)
+        (at [ "imdbID" ] string)
 
 
 moviesDecoder : Decoder (List Card)
@@ -135,19 +144,15 @@ stringToShowType showtypeString =
 
 
 type alias Card =
-    { title : String, showType : ShowType, imageUrl : String }
+    { title : String, showType : ShowType, imageUrl : String, imdbId : String }
 
 
-
--- getMovie : Cmd Msg
--- getMovie =
---     Http.get
---         { url = "https://www.omdbapi.com/?apikey=564562be&t=Guardian"
---         , expect = Http.expectJson GotCards movieDecoder
---         }
--- { url = "http://www.omdbapi.com/?apikey=564562be&s=Rick and Morty"
--- { url = "https://elm-lang.org/assets/public-opinion.txt"
--- field "Search" (field "Title_url" string)
+getMovie : String -> Cmd Msg
+getMovie imdbId =
+    Http.get
+        { url = "https://www.omdbapi.com/?apikey=564562be&i=" ++ imdbId
+        , expect = Http.expectJson GotContent Content.movieDecoder
+        }
 
 
 getMovies : String -> Cmd Msg
@@ -173,6 +178,7 @@ init session =
       , seriesChecked = True
       , movieChecked = True
       , gameChecked = True
+      , content = { title = "", released = "", writer = "", actors = "" , plot ="", genre = "", ratings = [{source = "", value = ""}]} 
       }
     , getMovies "Rick"
     )
@@ -185,7 +191,7 @@ subscriptions model =
 
 paginateSize : Int
 paginateSize =
-   10 
+    10
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -193,6 +199,9 @@ update msg model =
     case Debug.log "Home:update" msg of
         SendHttpRequest ->
             ( { model | request = Loading }, getMovies model.searchString )
+
+        ClickedSeeMore imdbId ->
+            ( model , getMovie imdbId  )
 
         SearchChanged a ->
             ( { model | searchString = a }, Cmd.none )
@@ -212,6 +221,14 @@ update msg model =
             case result of
                 Ok cards ->
                     ( { model | paginatedList = Paginate.fromList paginateSize cards, request = Success cards }, Cmd.none )
+
+                Err error ->
+                    ( { model | request = Failure, errorMessage = Just (errorToString error) }, Cmd.none )
+
+        GotContent result ->
+            case result of
+                Ok content ->
+                    ( { model | content = content }, Cmd.none )
 
                 Err error ->
                     ( { model | request = Failure, errorMessage = Just (errorToString error) }, Cmd.none )
@@ -375,7 +392,7 @@ grid model =
     let
         colAttrs =
             [ padding 10
-                  , width fill
+            , width fill
             ]
 
         rowAttrs =
@@ -437,7 +454,7 @@ grid model =
                 ]
 
 
-cardView : Card -> Element msg
+cardView : Card -> Element Msg
 cardView cardData =
     Element.column
         [ -- maxSizeOfCard
@@ -467,7 +484,7 @@ cardView cardData =
         -- Row of buttons
         , Element.row
             [ alignRight, alignBottom, height <| fillPortion 1 ]
-            [ buttonSeeMore
+            [ buttonSeeMore cardData
 
             -- , buttonDelete
             ]
@@ -562,8 +579,8 @@ paginateButton paginateAction =
         { onPress = Just (UsePaginate paginateRecord.action), label = text paginateRecord.text }
 
 
-buttonSeeMore : Element msg
-buttonSeeMore =
+buttonSeeMore : Card ->  Element Msg
+buttonSeeMore cardData=
     Input.button
         [ mouseOver
             [ Background.color hoverBlue
@@ -575,7 +592,7 @@ buttonSeeMore =
         , Element.focused
             [ Background.color focusedBlue ]
         ]
-        { onPress = Nothing, label = text "See More" }
+        { onPress = Just <|ClickedSeeMore cardData.imdbId, label = text "See More" }
 
 
 buttonDelete : Element msg
@@ -602,6 +619,7 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ searchbar model
+
                     -- , grid model
                     ]
 
@@ -609,6 +627,7 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ searchbar model
+
                     -- , grid model
                     ]
 
@@ -616,6 +635,7 @@ view model =
             layout [ width fill, height fill ] <|
                 column [ width fill, centerX ]
                     [ searchbar model
+
                     -- , grid model
                     , Element.text (Maybe.withDefault "" model.errorMessage)
                     ]

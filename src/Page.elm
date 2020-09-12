@@ -21,6 +21,7 @@ type Page
     = Home
     | Login
     | Register
+    | Content
 
 
 
@@ -39,6 +40,9 @@ pageToString page =
         Register ->
             "Register"
 
+        Content ->
+            "Content"
+
 
 pageToRoute : Page -> Route
 pageToRoute page =
@@ -51,6 +55,9 @@ pageToRoute page =
 
         Register ->
             Route.Register
+
+        Content ->
+            Route.Content
 
 
 isActive : Page -> Route -> Bool
@@ -65,6 +72,8 @@ isActive page route =
         ( Register, Route.Register ) ->
             True
 
+        ( Content, Route.Content ) ->
+            True
         -- ( Register, Route.Register ) ->
         --     True
         -- ( Settings, Route.Settings ) ->
