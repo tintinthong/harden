@@ -13,3 +13,4 @@ Philosophy
 I try to minise the amount of attributes I have 
 
 
+
